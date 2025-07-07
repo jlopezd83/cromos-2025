@@ -20,7 +20,7 @@ export default function Repetidos() {
       // Obtener todos los cromos del usuario para poder aplicar la lógica robusta
       const { data: userCromos } = await supabase
         .from("usuarios_cromos")
-        .select("id_cromo, cantidad, pegado")
+        .select("id_cromo, pegado")
         .eq("id_usuario", user.id);
       if (!userCromos || userCromos.length === 0) {
         setRepetidos([]);
@@ -91,7 +91,10 @@ export default function Repetidos() {
                   <div key={cromo.id} style={{ background: '#f1f5fd', border: '2px solid #2563eb', borderRadius: 10, padding: 10, textAlign: 'center', width: 100 }}>
                     <img src={cromo.imagen_url || 'https://via.placeholder.com/80x80?text=Cromo'} alt={cromo.nombre} style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', marginBottom: 8 }} />
                     <div style={{ fontWeight: 'bold', color: '#2563eb', fontSize: '1em' }}>{cromo.nombre}</div>
-                    <div style={{ color: '#333', fontSize: '0.95em', margin: '0.2em 0' }}>x{cromo.cantidad}</div>
+                    {/* Mostrar cantidad solo si hay más de uno */}
+                    {cromo.cantidad > 1 && (
+                      <div style={{ color: '#333', fontSize: '0.95em', margin: '0.2em 0' }}>x{cromo.cantidad}</div>
+                    )}
                     <button style={{
                       background: '#60a5fa',
                       color: '#fff',

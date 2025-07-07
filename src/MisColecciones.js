@@ -46,7 +46,7 @@ export default function MisColecciones() {
           .from("cromos")
           .select("id", { count: 'exact', head: true })
           .eq("id_coleccion", col.id);
-        // Pegados
+        // Pegados y repetidos
         const { data: misCromos } = await supabase
           .from("usuarios_cromos")
           .select("id_cromo, pegado")
@@ -111,7 +111,7 @@ export default function MisColecciones() {
         const idsCromosCol = cromosCol ? cromosCol.map(c => c.id) : [];
         const { data: misCromos } = await supabase
           .from("usuarios_cromos")
-          .select("id_cromo, cantidad, pegado")
+          .select("id_cromo, pegado")
           .eq("id_usuario", user.id)
           .in("id_cromo", idsCromosCol);
         // Agrupar por id_cromo y aplicar la condición robusta
@@ -119,7 +119,7 @@ export default function MisColecciones() {
         if (misCromos) {
           const pegados = new Set(misCromos.filter(c => c.pegado).map(c => c.id_cromo));
           misCromos.forEach(c => {
-            if (!c.pegado && c.cantidad > 0 && !pegados.has(c.id_cromo)) {
+            if (!c.pegado && !pegados.has(c.id_cromo)) {
               cromosPorPegar.add(c.id_cromo);
             }
           });
@@ -139,7 +139,7 @@ export default function MisColecciones() {
       for (let col of misColecciones) {
         const { data: misCromos } = await supabase
           .from("usuarios_cromos")
-          .select("id_cromo, cantidad, pegado")
+          .select("id_cromo, pegado")
           .eq("id_usuario", user.id)
           .in("id_cromo", (await supabase.from("cromos").select("id").eq("id_coleccion", col.id)).data.map(c => c.id));
         // Agrupar por id_cromo
@@ -153,9 +153,9 @@ export default function MisColecciones() {
         let totalRepetidos = 0;
         Object.values(agrupadosPorCromo).forEach(cromos => {
           const tienePegado = cromos.some(c => c.pegado);
-          const noPegados = cromos.filter(c => !c.pegado && c.cantidad > 0);
+          const noPegados = cromos.filter(c => !c.pegado);
           if (tienePegado && noPegados.length > 0) {
-            totalRepetidos += noPegados.reduce((acc, c) => acc + c.cantidad, 0);
+            totalRepetidos += noPegados.reduce((acc, c) => acc + 1, 0); // Suma 1 por cada repetido
           }
         });
         resultado[col.id] = totalRepetidos;
@@ -218,7 +218,7 @@ export default function MisColecciones() {
       // Añadir cromo al usuario (usuarios_cromos): si ya lo tiene y no pegado, suma cantidad; si no, crea registro
       const { data: userCromo } = await supabase
         .from("usuarios_cromos")
-        .select("id, cantidad")
+        .select("id, pegado")
         .eq("id_usuario", user.id)
         .eq("id_cromo", cromo.id)
         .eq("pegado", false)
@@ -226,13 +226,12 @@ export default function MisColecciones() {
       if (userCromo) {
         await supabase
           .from("usuarios_cromos")
-          .update({ cantidad: userCromo.cantidad + 1 })
+          .update({ pegado: true }) // Solo actualiza el campo pegado
           .eq("id", userCromo.id);
       } else {
         await supabase.from("usuarios_cromos").insert({
           id_usuario: user.id,
           id_cromo: cromo.id,
-          cantidad: 1,
           pegado: false,
         });
       }

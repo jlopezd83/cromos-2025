@@ -39,7 +39,7 @@ export default function ColeccionDetalle() {
     if (user) {
       let { data: misCromosData } = await supabase
         .from("usuarios_cromos")
-        .select("id_cromo, cantidad, pegado")
+        .select("id_cromo, pegado")
         .eq("id_usuario", user.id);
       setMisCromos(misCromosData || []);
     }
