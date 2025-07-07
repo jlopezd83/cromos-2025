@@ -8,6 +8,7 @@ export default function Sobres() {
   const [showModal, setShowModal] = useState(false);
   const [cromosModal, setCromosModal] = useState([]);
   const [mensajeModal, setMensajeModal] = useState("");
+  const [cromosAntes, setCromosAntes] = useState([]); // ids de cromos que tenía antes
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -77,6 +78,12 @@ export default function Sobres() {
 
   // Reclamar sobre gratuito para una colección
   const handleReclamar = async (id_coleccion) => {
+    // Obtener cromos que el usuario ya tenía antes
+    const { data: cromosUsuarioAntes } = await supabase
+      .from("usuarios_cromos")
+      .select("id_cromo")
+      .eq("id_usuario", user.id);
+    setCromosAntes(cromosUsuarioAntes ? cromosUsuarioAntes.map(c => c.id_cromo) : []);
     setEstadoColecciones(prev => ({
       ...prev,
       [id_coleccion]: { ...prev[id_coleccion], abriendo: true, mensaje: "" }
@@ -172,6 +179,12 @@ export default function Sobres() {
 
   // Abrir sobre comprado para una colección
   const handleAbrirSobreComprado = async (id_coleccion, id_sobre) => {
+    // Obtener cromos que el usuario ya tenía antes
+    const { data: cromosUsuarioAntes } = await supabase
+      .from("usuarios_cromos")
+      .select("id_cromo")
+      .eq("id_usuario", user.id);
+    setCromosAntes(cromosUsuarioAntes ? cromosUsuarioAntes.map(c => c.id_cromo) : []);
     setEstadoColecciones(prev => ({
       ...prev,
       [id_coleccion]: { ...prev[id_coleccion], abriendo: true, mensaje: "" }
@@ -404,12 +417,27 @@ export default function Sobres() {
           <div style={{ background: '#fff', borderRadius: 16, padding: '2em 2em 1.5em 2em', boxShadow: '0 4px 24px #2563eb33', minWidth: 320, maxWidth: 420, textAlign: 'center' }}>
             <h3 style={{ color: '#2563eb' }}>{mensajeModal}</h3>
             <div style={{ display: 'flex', gap: '1.2em', flexWrap: 'wrap', justifyContent: 'center', margin: '1.5em 0' }}>
-              {cromosModal.map(cromo => (
-                <div key={cromo.id} style={{ background: '#f1f5fd', border: '2px solid #2563eb', borderRadius: 10, padding: 10, textAlign: 'center', width: 90, position: 'relative' }}>
-                  <img src={cromo.imagen_url || 'https://via.placeholder.com/80x80?text=Cromo'} alt={cromo.nombre} style={{ width: 70, height: 70, borderRadius: 8, objectFit: 'cover', marginBottom: 8 }} />
-                  <div style={{ fontWeight: 'bold', color: '#2563eb', fontSize: '0.95em' }}>{cromo.nombre}</div>
-                </div>
-              ))}
+              {cromosModal.map(cromo => {
+                const esNuevo = cromosAntes && !cromosAntes.includes(cromo.id);
+                return (
+                  <div key={cromo.id} style={{ background: '#f1f5fd', border: '2px solid #2563eb', borderRadius: 10, padding: 10, textAlign: 'center', width: 90, position: 'relative' }}>
+                    <img src={cromo.imagen_url || 'https://via.placeholder.com/80x80?text=Cromo'} alt={cromo.nombre} style={{ width: 70, height: 70, borderRadius: 8, objectFit: 'cover', marginBottom: 8 }} />
+                    <div style={{ fontWeight: 'bold', color: '#2563eb', fontSize: '0.95em' }}>{cromo.nombre}</div>
+                    <div style={{
+                      marginTop: 6,
+                      display: 'inline-block',
+                      background: esNuevo ? '#22c55e' : '#facc15',
+                      color: esNuevo ? '#fff' : '#333',
+                      borderRadius: 6,
+                      padding: '0.2em 0.6em',
+                      fontSize: '0.8em',
+                      fontWeight: 'bold'
+                    }}>
+                      {esNuevo ? 'Nuevo' : 'Repetido'}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <button onClick={() => setShowModal(false)} style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '0.7em 2em', fontWeight: 'bold', fontSize: '1.1em', cursor: 'pointer', marginTop: 12 }}>Cerrar</button>
           </div>
