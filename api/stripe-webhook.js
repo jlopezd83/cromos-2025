@@ -53,6 +53,16 @@ export default async function handler(req, res) {
       // Obtén el customerId de Stripe
       const customerId = session.customer || (subscription && subscription.customer);
       
+      // Verificar si el usuario ya usó el trial
+      const { data: perfilUsuario } = await supabase
+        .from('perfiles')
+        .select('trial_used')
+        .eq('id', userId)
+        .single();
+      
+      const yaUsoTrial = perfilUsuario?.trial_used;
+      console.log('Usuario ya usó trial:', yaUsoTrial);
+      
       // Calcular fecha de expiración del premium
       let premiumUntil = null;
       try {
@@ -96,12 +106,13 @@ export default async function handler(req, res) {
         }
       } catch (error) {
         console.error('Error calculando premiumUntil:', error);
-        // Fallback: usar 15 días para trials
-        console.log('Usando fallback de 15 días...');
-        const fifteenDaysFromNow = new Date();
-        fifteenDaysFromNow.setDate(fifteenDaysFromNow.getDate() + 15);
-        premiumUntil = fifteenDaysFromNow.toISOString();
-        console.log('Fallback 15 días:', premiumUntil);
+        // Fallback: usar 15 días si no usó trial, 30 días si ya lo usó
+        const diasFallback = yaUsoTrial ? 30 : 15;
+        console.log(`Usando fallback de ${diasFallback} días...`);
+        const fallbackDate = new Date();
+        fallbackDate.setDate(fallbackDate.getDate() + diasFallback);
+        premiumUntil = fallbackDate.toISOString();
+        console.log(`Fallback ${diasFallback} días:`, premiumUntil);
       }
       
       const { error } = await supabase

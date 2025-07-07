@@ -1,4 +1,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -8,7 +11,33 @@ export default async function handler(req, res) {
   if (!userId || !priceId) {
     return res.status(400).json({ error: 'Faltan parámetros' });
   }
+  
   try {
+    // Verificar si el usuario ya tiene un stripe_customer_id
+    const { data: perfil } = await supabase
+      .from('perfiles')
+      .select('stripe_customer_id')
+      .eq('id', userId)
+      .single();
+    
+    let customerId = null;
+    
+    if (perfil?.stripe_customer_id) {
+      // Usar el customer existente
+      customerId = perfil.stripe_customer_id;
+      console.log('Usando customer existente:', customerId);
+    } else {
+      // Crear nuevo customer
+      const customer = await stripe.customers.create({
+        email: email,
+        metadata: {
+          user_id: userId,
+        },
+      });
+      customerId = customer.id;
+      console.log('Creado nuevo customer:', customerId);
+    }
+    
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -18,7 +47,7 @@ export default async function handler(req, res) {
           quantity: 1,
         },
       ],
-      customer_email: email,
+      customer: customerId, // Usar customer existente o nuevo
       metadata: {
         user_id: userId,
       },
