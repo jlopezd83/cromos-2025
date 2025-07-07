@@ -22,7 +22,7 @@ module.exports = async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: 'https://cromos-2025-git-main-jlopezd83s-projects.vercel.app/sobres',
+      success_url: 'https://cromos-2025.vercel.app/sobres',
       cancel_url: 'http://localhost:3000/cancel',
       metadata: {
         userId,
