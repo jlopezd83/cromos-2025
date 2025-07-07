@@ -274,54 +274,52 @@ export default function MisColecciones() {
             const porcentaje = col.totalCromos > 0 ? Math.round((col.pegados / col.totalCromos) * 100) : 0;
             const porPegar = porColeccionPorPegar[col.id] || 0;
             return (
-              <div key={col.id} style={{ display: 'flex', flexDirection: 'column', background: '#f1f5fd', borderRadius: 12, boxShadow: '0 2px 8px #2563eb11', padding: '1em', gap: '0.7em' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5em' }}>
+              <div key={col.id} style={{ display: 'flex', alignItems: 'center', background: '#f1f5fd', borderRadius: 12, boxShadow: '0 2px 8px #2563eb11', padding: '1em', gap: '1.5em' }}>
+                <Link to={`/colecciones/${col.id}`} style={{ textDecoration: 'none' }}>
+                  <img src={col.imagen_portada_url || 'https://via.placeholder.com/80x80?text=Coleccion'} alt={col.nombre} style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', border: '2px solid #2563eb' }} />
+                </Link>
+                <div style={{ flex: 1 }}>
                   <Link to={`/colecciones/${col.id}`} style={{ textDecoration: 'none' }}>
-                    <img src={col.imagen_portada_url || 'https://via.placeholder.com/80x80?text=Coleccion'} alt={col.nombre} style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', border: '2px solid #2563eb' }} />
+                    <h3 style={{ margin: 0, color: '#2563eb' }}>{col.nombre}</h3>
                   </Link>
-                  <div style={{ flex: 1 }}>
-                    <Link to={`/colecciones/${col.id}`} style={{ textDecoration: 'none' }}>
-                      <h3 style={{ margin: 0, color: '#2563eb' }}>{col.nombre}</h3>
-                    </Link>
-                    <span style={{ color: '#2563eb', fontWeight: 500 }}>
-                      {col.pegados}/{col.totalCromos} cromos ({porcentaje}%)
+                  <span style={{ color: '#2563eb', fontWeight: 500 }}>
+                    {col.pegados}/{col.totalCromos} cromos ({porcentaje}%)
+                  </span>
+                  {col.totalRepetidos > 0 && (
+                    <span style={{ color: '#22c55e', fontWeight: 'bold', marginLeft: 12 }}>
+                      {col.totalRepetidos} repetidos
                     </span>
-                    {col.totalRepetidos > 0 && (
-                      <span style={{ color: '#22c55e', fontWeight: 'bold', marginLeft: 12 }}>
-                        {col.totalRepetidos} repetidos
-                      </span>
-                    )}
-                    {porPegar > 0 && (
-                      <div style={{ color: '#f59e42', fontWeight: 'bold', marginTop: 4 }}>
-                        Tienes {porPegar} cromos por pegar
-                      </div>
-                    )}
-                    <p style={{ margin: '0.3em 0 0.5em 0', color: '#333' }}>{col.descripcion}</p>
-                  </div>
-                  <div style={{ minWidth: 180 }}>
-                    {sobresInfo[col.id]?.puedeReclamar ? (
-                      <button
-                        onClick={() => handleReclamar(col.id)}
-                        disabled={reclamando === col.id}
-                        style={{
-                          background: '#2563eb',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: 6,
-                          padding: '0.5em 1.2em',
-                          fontWeight: 'bold',
-                          cursor: reclamando === col.id ? 'not-allowed' : 'pointer',
-                          fontSize: '1rem'
-                        }}
-                      >
-                        {reclamando === col.id ? 'Reclamando...' : 'Reclamar sobre gratuito'}
-                      </button>
-                    ) : (
-                      <span style={{ color: '#2563eb', fontWeight: 'bold' }}>
-                        Vuelve en {sobresInfo[col.id]?.tiempoRestante} para reclamar tu sobre gratuito
-                      </span>
-                    )}
-                  </div>
+                  )}
+                  {porPegar > 0 && (
+                    <div style={{ color: '#f59e42', fontWeight: 'bold', marginTop: 4 }}>
+                      Tienes {porPegar} cromos por pegar
+                    </div>
+                  )}
+                  <p style={{ margin: '0.3em 0 0.5em 0', color: '#333' }}>{col.descripcion}</p>
+                </div>
+                <div style={{ minWidth: 180 }}>
+                  {sobresInfo[col.id]?.puedeReclamar ? (
+                    <button
+                      onClick={() => handleReclamar(col.id)}
+                      disabled={reclamando === col.id}
+                      style={{
+                        background: '#2563eb',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 6,
+                        padding: '0.5em 1.2em',
+                        fontWeight: 'bold',
+                        cursor: reclamando === col.id ? 'not-allowed' : 'pointer',
+                        fontSize: '1rem'
+                      }}
+                    >
+                      {reclamando === col.id ? 'Reclamando...' : 'Reclamar sobre gratuito'}
+                    </button>
+                  ) : (
+                    <span style={{ color: '#2563eb', fontWeight: 'bold' }}>
+                      Vuelve en {sobresInfo[col.id]?.tiempoRestante} para reclamar tu sobre gratuito
+                    </span>
+                  )}
                 </div>
               </div>
             );
@@ -383,6 +381,21 @@ export default function MisColecciones() {
           </div>
         </div>
       )}
+      {/* Media query para móvil: solo apila las tarjetas, no cambies tamaño de imagen ni padding */}
+      <style>{`
+        @media (max-width: 600px) {
+          .main-content > div {
+            flex-direction: column !important;
+            gap: 16px !important;
+          }
+          .main-content > div > div {
+            flex-direction: column !important;
+            max-width: 98vw !important;
+            min-width: 0 !important;
+            gap: 1em !important;
+          }
+        }
+      `}</style>
     </div>
   );
 } 
