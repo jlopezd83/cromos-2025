@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 
+// Precios de packs (global)
+export const PACKS_SOBRES = [
+  { cantidad: 1, precio: 0.99 },
+  { cantidad: 5, precio: 3.99 },
+  { cantidad: 10, precio: 6.99 },
+];
+
 export default function Sobres() {
   const [user, setUser] = useState(null);
   const [colecciones, setColecciones] = useState([]); // [{id, nombre, ...}]
@@ -12,14 +19,6 @@ export default function Sobres() {
   const [showCompra, setShowCompra] = useState(false);
   const [packSeleccionado, setPackSeleccionado] = useState(1);
   const [coleccionCompra, setColeccionCompra] = useState(null);
-
-  // Precios de packs
-  const packs = [
-    { cantidad: 1, precio: 1.00 },
-    { cantidad: 3, precio: 2.70 },
-    { cantidad: 5, precio: 4.00 },
-    { cantidad: 10, precio: 7.00 },
-  ];
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -318,15 +317,17 @@ export default function Sobres() {
                 border: '2px solid #2563eb22',
                 borderRadius: 18,
                 padding: 0,
-                minWidth: 290,
-                maxWidth: 350,
+                width: 320,
+                minWidth: 0,
+                maxWidth: '100%',
                 boxShadow: '0 4px 18px #2563eb13',
                 marginBottom: 20,
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'stretch',
-                position: 'relative'
+                position: 'relative',
+                flex: '0 0 320px',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 18, background: '#f4f8fb', padding: '18px 18px 10px 18px' }}>
                   <img src={col.imagen_portada_url || 'https://via.placeholder.com/80x80?text=Coleccion'} alt={col.nombre} style={{ width: 70, height: 70, borderRadius: 12, objectFit: 'cover', border: '2px solid #2563eb' }} />
@@ -432,7 +433,7 @@ export default function Sobres() {
           <div style={{ background: '#fff', borderRadius: 16, padding: '2em 2em 1.5em 2em', boxShadow: '0 4px 24px #2563eb33', minWidth: 320, maxWidth: 420, textAlign: 'center' }}>
             <h3 style={{ color: '#10b981', marginBottom: 18 }}>Comprar sobres</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 18 }}>
-              {packs.map(pack => (
+              {PACKS_SOBRES.map(pack => (
                 <label key={pack.cantidad} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', border: packSeleccionado === pack.cantidad ? '2px solid #10b981' : '2px solid #e5e7eb', borderRadius: 8, padding: '0.7em 1em', background: packSeleccionado === pack.cantidad ? '#f0fdf4' : '#f9fafb', fontWeight: packSeleccionado === pack.cantidad ? 'bold' : 'normal' }}>
                   <input
                     type="radio"
