@@ -47,13 +47,23 @@ export default function MisColecciones() {
           .select("id", { count: 'exact', head: true })
           .eq("id_coleccion", col.id);
         // Pegados
-        const { count: pegados } = await supabase
+        const { data: misCromos } = await supabase
           .from("usuarios_cromos")
-          .select("id", { count: 'exact', head: true })
+          .select("id_cromo, pegado")
           .eq("id_usuario", user.id)
-          .eq("pegado", true)
           .in("id_cromo", (await supabase.from("cromos").select("id").eq("id_coleccion", col.id)).data.map(c => c.id));
-        coleccionesConProgreso.push({ ...col, totalCromos, pegados });
+        // Contar pegados
+        const pegados = misCromos ? misCromos.filter(c => c.pegado).length : 0;
+        // Contar repetidos (no pegados y hay al menos uno pegado)
+        let totalRepetidos = 0;
+        if (misCromos) {
+          const idsPegados = new Set(misCromos.filter(c => c.pegado).map(c => c.id_cromo));
+          idsPegados.forEach(idCromo => {
+            const noPegados = misCromos.filter(c => c.id_cromo === idCromo && !c.pegado).length;
+            if (noPegados > 0) totalRepetidos += noPegados;
+          });
+        }
+        coleccionesConProgreso.push({ ...col, totalCromos, pegados, totalRepetidos });
       }
       setMisColecciones(coleccionesConProgreso);
       // Obtener info de sobres para cada colección

@@ -51,7 +51,7 @@ export default function Mercado() {
           // 2. Obtener mis cromos de la colección
           const { data: misCromos } = await supabase
             .from("usuarios_cromos")
-            .select("id_cromo, cantidad, pegado")
+            .select("id_cromo, pegado")
             .eq("id_usuario", user.id);
           const { data: cromosCol } = await supabase
             .from("cromos")
@@ -61,9 +61,13 @@ export default function Mercado() {
 
           // Mis cromos pegados y repetidos
           const pegados = new Set(misCromos?.filter(c => c.pegado).map(c => c.id_cromo));
-          const repetidos = new Set(
-            misCromos?.filter(c => !c.pegado && c.cantidad > 0 && pegados.has(c.id_cromo)).map(c => c.id_cromo)
-          );
+          const repetidos = new Set();
+          if (misCromos) {
+            pegados.forEach(idCromo => {
+              const noPegados = misCromos.filter(c => c.id_cromo === idCromo && !c.pegado).length;
+              if (noPegados > 0) repetidos.add(idCromo);
+            });
+          }
           const faltantes = idsCromosCol.filter(id => !pegados.has(id));
 
           // 3. Para cada usuario, obtener sus cromos y calcular matching
@@ -72,12 +76,16 @@ export default function Mercado() {
             // Sus cromos
             const { data: susCromos } = await supabase
               .from("usuarios_cromos")
-              .select("id_cromo, cantidad, pegado")
+              .select("id_cromo, pegado")
               .eq("id_usuario", u.id);
             const susPegados = new Set(susCromos?.filter(c => c.pegado).map(c => c.id_cromo));
-            const susRepetidos = new Set(
-              susCromos?.filter(c => !c.pegado && c.cantidad > 0 && susPegados.has(c.id_cromo)).map(c => c.id_cromo)
-            );
+            const susRepetidos = new Set();
+            if (susCromos) {
+              susPegados.forEach(idCromo => {
+                const noPegados = susCromos.filter(c => c.id_cromo === idCromo && !c.pegado).length;
+                if (noPegados > 0) susRepetidos.add(idCromo);
+              });
+            }
             const susFaltantes = idsCromosCol.filter(id => !susPegados.has(id));
 
             // Yo puedo dar: mis repetidos que le faltan a él

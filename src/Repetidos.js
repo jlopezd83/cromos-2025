@@ -36,7 +36,7 @@ export default function Repetidos() {
       // Filtrar cromos repetidos según la definición
       const repetidosFiltrados = Object.entries(agrupadosPorCromo).filter(([id_cromo, cromos]) => {
         const tienePegado = cromos.some(c => c.pegado);
-        const noPegados = cromos.filter(c => !c.pegado && c.cantidad > 0);
+        const noPegados = cromos.filter(c => !c.pegado);
         return tienePegado && noPegados.length > 0;
       });
       if (repetidosFiltrados.length === 0) {
@@ -65,8 +65,8 @@ export default function Repetidos() {
             cromos: []
           };
         }
-        // Sumar la cantidad total de los no pegados
-        const cantidad = cromos.filter(c => !c.pegado && c.cantidad > 0).reduce((acc, c) => acc + c.cantidad, 0);
+        // Contar el número de no pegados
+        const cantidad = cromos.filter(c => !c.pegado).length;
         agrupados[cromo.id_coleccion].cromos.push({ ...cromo, cantidad });
       });
       setRepetidos(Object.values(agrupados));

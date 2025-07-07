@@ -54,23 +54,22 @@ export default function ColeccionDetalle() {
   // Función para saber el estado de un cromo
   const getEstadoCromo = (cromoId) => {
     const pegado = misCromos.find(c => c.id_cromo === cromoId && c.pegado);
-    const porPegar = misCromos.find(c => c.id_cromo === cromoId && !c.pegado && c.cantidad > 0);
+    const porPegar = misCromos.find(c => c.id_cromo === cromoId && !c.pegado);
     if (pegado) return "pegado";
     if (porPegar) return "por_pegar";
     return "faltante";
   };
 
-  // Calcular repetidos correctamente según la definición: pegado=false, cantidad>0 y existe pegado=true para ese id_cromo
+  // Calcular repetidos correctamente según la definición: pegado=false y existe pegado=true para ese id_cromo
   const getRepetidos = () => {
     let count = 0;
     cromos.forEach(cromo => {
       // ¿Hay al menos un registro pegado=true para este cromo?
       const tienePegado = misCromos.some(c => c.id_cromo === cromo.id && c.pegado);
-      // ¿Hay registros no pegados y cantidad>0?
-      const noPegados = misCromos.filter(c => c.id_cromo === cromo.id && !c.pegado && c.cantidad > 0);
+      // ¿Cuántos no pegados hay?
+      const noPegados = misCromos.filter(c => c.id_cromo === cromo.id && !c.pegado);
       if (tienePegado && noPegados.length > 0) {
-        // Suma todas las cantidades de los no pegados
-        count += noPegados.reduce((acc, c) => acc + c.cantidad, 0);
+        count += noPegados.length;
       }
     });
     return count;
@@ -79,9 +78,10 @@ export default function ColeccionDetalle() {
   // Pegar cromo
   const handlePegar = async (cromoId) => {
     setPegando(cromoId);
+    // Buscar un registro sin pegar
     const { data: userCromo } = await supabase
       .from("usuarios_cromos")
-      .select("id, cantidad")
+      .select("id")
       .eq("id_usuario", user.id)
       .eq("id_cromo", cromoId)
       .eq("pegado", false)
@@ -91,19 +91,16 @@ export default function ColeccionDetalle() {
       await supabase.from("usuarios_cromos").update({ pegado: true }).eq("id", userCromo.id);
       // Actualizar el estado local sin recargar toda la página
       setMisCromos(prev => {
-        // Marcar el cromo como pegado y restar uno a los no pegados
-        const nuevos = prev.map(c => {
-          if (c.id_cromo === cromoId && !c.pegado) {
-            if (c.cantidad > 1) {
-              return { ...c, cantidad: c.cantidad - 1 };
-            } else {
-              return null; // Eliminar si ya no quedan no pegados
-            }
+        // Quitar un no pegado y añadir un pegado
+        let quitado = false;
+        const nuevos = prev.filter(c => {
+          if (!quitado && c.id_cromo === cromoId && !c.pegado) {
+            quitado = true;
+            return false;
           }
-          return c;
-        }).filter(Boolean);
-        // Añadir un registro pegado
-        return [...nuevos, { id_cromo: cromoId, cantidad: 1, pegado: true }];
+          return true;
+        });
+        return [...nuevos, { id_cromo: cromoId, pegado: true }];
       });
     }
     setPegando(null);

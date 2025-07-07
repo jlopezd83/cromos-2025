@@ -138,33 +138,18 @@ export default function Sobres() {
       }));
       return;
     }
-    // Insertar cromos obtenidos en sobres_cromos
+    // Insertar cromos obtenidos en sobres_cromos y usuarios_cromos
     for (let id_cromo of seleccionados) {
       await supabase.from("sobres_cromos").insert({
         id_sobre: sobre.id,
         id_cromo,
       });
-      // Añadir cromo al usuario (usuarios_cromos): si ya lo tiene y no pegado, suma cantidad; si no, crea registro
-      const { data: userCromo } = await supabase
-        .from("usuarios_cromos")
-        .select("id, cantidad")
-        .eq("id_usuario", user.id)
-        .eq("id_cromo", id_cromo)
-        .eq("pegado", false)
-        .single();
-      if (userCromo) {
-        await supabase
-          .from("usuarios_cromos")
-          .update({ cantidad: userCromo.cantidad + 1 })
-          .eq("id", userCromo.id);
-      } else {
-        await supabase.from("usuarios_cromos").insert({
-          id_usuario: user.id,
-          id_cromo,
-          cantidad: 1,
-          pegado: false,
-        });
-      }
+      // Añadir cromo al usuario (usuarios_cromos): SIEMPRE inserta una nueva fila
+      await supabase.from("usuarios_cromos").insert({
+        id_usuario: user.id,
+        id_cromo,
+        pegado: false,
+      });
     }
     // Obtener info de los cromos para mostrar
     const { data: cromosInfo } = await supabase
@@ -220,33 +205,18 @@ export default function Sobres() {
     for (let idx of indices) {
       seleccionados.push(cromos[idx]);
     }
-    // Insertar cromos obtenidos en sobres_cromos
+    // Insertar cromos obtenidos en sobres_cromos y usuarios_cromos (para sobres comprados)
     for (let cromo of seleccionados) {
       await supabase.from("sobres_cromos").insert({
         id_sobre: id_sobre,
         id_cromo: cromo.id,
       });
-      // Añadir cromo al usuario (usuarios_cromos): si ya lo tiene y no pegado, suma cantidad; si no, crea registro
-      const { data: userCromo } = await supabase
-        .from("usuarios_cromos")
-        .select("id, cantidad")
-        .eq("id_usuario", user.id)
-        .eq("id_cromo", cromo.id)
-        .eq("pegado", false)
-        .single();
-      if (userCromo) {
-        await supabase
-          .from("usuarios_cromos")
-          .update({ cantidad: userCromo.cantidad + 1 })
-          .eq("id", userCromo.id);
-      } else {
-        await supabase.from("usuarios_cromos").insert({
-          id_usuario: user.id,
-          id_cromo: cromo.id,
-          cantidad: 1,
-          pegado: false,
-        });
-      }
+      // Añadir cromo al usuario (usuarios_cromos): SIEMPRE inserta una nueva fila
+      await supabase.from("usuarios_cromos").insert({
+        id_usuario: user.id,
+        id_cromo: cromo.id,
+        pegado: false,
+      });
     }
     // Marcar el sobre como abierto
     await supabase
