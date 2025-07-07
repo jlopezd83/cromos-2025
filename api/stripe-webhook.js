@@ -94,7 +94,13 @@ export default async function handler(req, res) {
             premiumUntil = startDate.toISOString();
             console.log('Usando 30 días desde start:', premiumUntil);
           } else {
-            throw new Error('No current_period_end ni current_period_start en retrievedSubscription');
+            // Si no hay periodos definidos, usar fallback basado en si ya usó trial
+            console.log('No hay periodos definidos, usando fallback...');
+            const diasFallback = yaUsoTrial ? 30 : 15;
+            const fallbackDate = new Date();
+            fallbackDate.setDate(fallbackDate.getDate() + diasFallback);
+            premiumUntil = fallbackDate.toISOString();
+            console.log(`Fallback ${diasFallback} días:`, premiumUntil);
           }
         } else {
           // Para pagos únicos, usar 30 días desde ahora
