@@ -70,11 +70,21 @@ export default async function handler(req, res) {
           console.log('Obteniendo subscription desde session.subscription...');
           const retrievedSubscription = await stripe.subscriptions.retrieve(session.subscription);
           console.log('retrievedSubscription.current_period_end:', retrievedSubscription.current_period_end);
+          console.log('retrievedSubscription.status:', retrievedSubscription.status);
+          console.log('retrievedSubscription.current_period_start:', retrievedSubscription.current_period_start);
+          
           if (retrievedSubscription.current_period_end) {
             premiumUntil = new Date(retrievedSubscription.current_period_end * 1000).toISOString();
             console.log('Usando retrievedSubscription.current_period_end:', premiumUntil);
+          } else if (retrievedSubscription.current_period_start) {
+            // Si no hay current_period_end pero sí current_period_start, calcular 30 días desde el inicio
+            console.log('Calculando 30 días desde current_period_start...');
+            const startDate = new Date(retrievedSubscription.current_period_start * 1000);
+            startDate.setDate(startDate.getDate() + 30);
+            premiumUntil = startDate.toISOString();
+            console.log('Usando 30 días desde start:', premiumUntil);
           } else {
-            throw new Error('No current_period_end en retrievedSubscription');
+            throw new Error('No current_period_end ni current_period_start en retrievedSubscription');
           }
         } else {
           // Para pagos únicos, usar 30 días desde ahora
