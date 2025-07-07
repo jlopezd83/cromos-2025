@@ -172,13 +172,7 @@ export default function Perfil() {
         {editando && form.nombre_usuario !== perfil.nombre_usuario && disponible && (
           <span style={{ color: '#22c55e', fontWeight: 'bold' }}>¡Disponible!</span>
         )}
-        <label style={{ fontWeight: 'bold', color: '#2563eb' }}>Rol</label>
-        <input
-          type="text"
-          value={perfil.rol || ''}
-          disabled
-          style={{ padding: 8, borderRadius: 6, border: '1px solid #2563eb', fontSize: '1em', background: '#f3f4f6', color: '#888' }}
-        />
+        {/* Eliminar el campo de rol, no mostrar ni el label ni el input */}
         {!editando ? (
           <button type="button" onClick={handleEditar} style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 6, padding: '0.5em 1.2em', fontWeight: 'bold', fontSize: '1em', marginTop: 12, cursor: 'pointer' }}>
             Editar

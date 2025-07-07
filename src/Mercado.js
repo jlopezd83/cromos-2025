@@ -106,7 +106,7 @@ export default function Mercado() {
   }, [user, coleccionSeleccionada]);
 
   return (
-    <div className="main-content" style={{ maxWidth: 800 }}>
+    <div className="main-content">
       <h2 style={{ color: '#2563eb', marginBottom: 8 }}>Mercado de Cromos</h2>
       <p style={{ color: '#333', fontSize: '1.1em', marginBottom: 24 }}>
         Busca posibles intercambios con otros usuarios de tus colecciones. Selecciona una colección para ver con quién puedes intercambiar cromos.
@@ -127,33 +127,37 @@ export default function Mercado() {
       {!loading && matchings.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {matchings.map(({ usuario, yoPuedoDar, elPuedeDar }) => (
-            <div key={usuario.id} style={{ background: '#f4f8fb', border: '2px solid #2563eb22', borderRadius: 16, padding: 20, boxShadow: '0 2px 12px #2563eb11' }}>
+            <div key={usuario.id} style={{ background: '#f4f8fb', border: '2px solid #2563eb22', borderRadius: 16, padding: 28, boxShadow: '0 2px 12px #2563eb11', display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 1100, margin: '0 auto', minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 10 }}>
                 <img src={usuario.avatar_url || 'https://placehold.co/48x48?text=U'} alt={usuario.nombre} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid #2563eb' }} />
-                <span style={{ fontWeight: 600, color: '#2563eb', fontSize: '1.1em' }}>{usuario.nombre}</span>
+                <span style={{ fontWeight: 600, color: '#2563eb', fontSize: '1.1em', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{usuario.nombre}</span>
+                <span style={{ color: '#10b981', fontWeight: 500, fontSize: '1em', marginLeft: 8 }} title={`Tú puedes dar: ${yoPuedoDar.length}, él puede darte: ${elPuedeDar.length}`}>
+                  <span style={{ marginRight: 8 }}>↔️</span>
+                  <span style={{ color: '#10b981' }}>{yoPuedoDar.length}</span>
+                  <span style={{ color: '#888', margin: '0 4px' }}>/</span>
+                  <span style={{ color: '#f59e42' }}>{elPuedeDar.length}</span>
+                </span>
               </div>
-              <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
-                <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', flexDirection: 'row', justifyContent: 'space-between' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <b style={{ color: '#10b981' }}>Tú puedes dar a {usuario.nombre}:</b>
                   {yoPuedoDar.length === 0 ? <span style={{ color: '#888', marginLeft: 8 }}>Nada</span> : (
                     <div style={{ display: 'flex', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
                       {yoPuedoDar.map(cromo => (
-                        <div key={cromo.id} style={{ background: '#fff', border: '2px solid #2563eb', borderRadius: 8, padding: 6, textAlign: 'center', width: 70 }}>
-                          <img src={cromo.imagen_url || 'https://placehold.co/48x48?text=C'} alt={cromo.nombre} style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', marginBottom: 4 }} />
-                          <div style={{ fontWeight: 'bold', color: '#2563eb', fontSize: '0.95em' }}>{cromo.nombre}</div>
+                        <div key={cromo.id} style={{ background: '#fff', border: '2px solid #2563eb', borderRadius: 10, width: 100, height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, boxSizing: 'border-box' }}>
+                          <img src={cromo.imagen_url || 'https://placehold.co/80x80?text=C'} alt={cromo.nombre} style={{ width: 84, height: 84, borderRadius: 8, objectFit: 'cover', display: 'block' }} />
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <b style={{ color: '#f59e42' }}>{usuario.nombre} puede darte a ti:</b>
                   {elPuedeDar.length === 0 ? <span style={{ color: '#888', marginLeft: 8 }}>Nada</span> : (
                     <div style={{ display: 'flex', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
                       {elPuedeDar.map(cromo => (
-                        <div key={cromo.id} style={{ background: '#fff', border: '2px solid #2563eb', borderRadius: 8, padding: 6, textAlign: 'center', width: 70 }}>
-                          <img src={cromo.imagen_url || 'https://placehold.co/48x48?text=C'} alt={cromo.nombre} style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', marginBottom: 4 }} />
-                          <div style={{ fontWeight: 'bold', color: '#2563eb', fontSize: '0.95em' }}>{cromo.nombre}</div>
+                        <div key={cromo.id} style={{ background: '#fff', border: '2px solid #2563eb', borderRadius: 10, width: 100, height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, boxSizing: 'border-box' }}>
+                          <img src={cromo.imagen_url || 'https://placehold.co/80x80?text=C'} alt={cromo.nombre} style={{ width: 84, height: 84, borderRadius: 8, objectFit: 'cover', display: 'block' }} />
                         </div>
                       ))}
                     </div>
@@ -164,6 +168,29 @@ export default function Mercado() {
           ))}
         </div>
       )}
+      {/* Media query para móvil */}
+      <style>{`
+        @media (max-width: 600px) {
+          .main-content h2 {
+            font-size: 1.2em !important;
+          }
+          .main-content > div > div {
+            max-width: 98vw !important;
+            padding: 12px !important;
+          }
+          .main-content > div > div > div {
+            flex-direction: column !important;
+            gap: 12px !important;
+          }
+          .main-content img {
+            width: 40px !important;
+            height: 40px !important;
+          }
+          .main-content b {
+            font-size: 1em !important;
+          }
+        }
+      `}</style>
     </div>
   );
 } 

@@ -224,3 +224,11 @@ p {
     position: relative;
   }
 }
+
+@media (max-width: 600px) {
+  .main-content h2 {
+    font-size: 1.15em !important;
+    text-align: center;
+    margin-bottom: 0.7em;
+  }
+}

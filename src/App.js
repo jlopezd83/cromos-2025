@@ -60,10 +60,10 @@ function Navbar() {
           <>
             <Link className={location.pathname === "/mis-colecciones" ? "active" : ""} to="/mis-colecciones" onClick={handleNavClick}>Mis colecciones</Link>
             <Link className={location.pathname.startsWith("/colecciones") ? "active" : ""} to="/colecciones" onClick={handleNavClick}>Explorar</Link>
-            <Link className={location.pathname === "/repetidos" ? "active" : ""} to="/repetidos" onClick={handleNavClick}>Repetidos</Link>
+            {/* <Link className={location.pathname === "/repetidos" ? "active" : ""} to="/repetidos" onClick={handleNavClick}>Repetidos</Link> */}
             <Link className={location.pathname === "/sobres" ? "active" : ""} to="/sobres" onClick={handleNavClick}>Sobres</Link>
-            <Link className={location.pathname === "/amigos" ? "active" : ""} to="/amigos" onClick={handleNavClick}>Amigos</Link>
             <Link className={location.pathname === "/perfil" ? "active" : ""} to="/perfil" onClick={handleNavClick}>Mi perfil</Link>
+            {/* <Link className={location.pathname === "/amigos" ? "active" : ""} to="/amigos" onClick={handleNavClick}>Amigos</Link> */}
             <Link className={location.pathname === "/mercado" ? "active" : ""} to="/mercado" onClick={handleNavClick}>Mercado</Link>
             <button onClick={handleLogout} style={{
               background: "#fff",
@@ -123,9 +123,9 @@ function App() {
           <Route path="/mis-colecciones" element={<RutaProtegida><MisColecciones /></RutaProtegida>} />
           <Route path="/colecciones" element={<RutaProtegida><Colecciones /></RutaProtegida>} />
           <Route path="/colecciones/:id" element={<RutaProtegida><ColeccionDetalle /></RutaProtegida>} />
-          <Route path="/repetidos" element={<RutaProtegida><Repetidos /></RutaProtegida>} />
+          {/* <Route path="/repetidos" element={<RutaProtegida><Repetidos /></RutaProtegida>} /> */}
           <Route path="/sobres" element={<RutaProtegida><Sobres /></RutaProtegida>} />
-          <Route path="/amigos" element={<RutaProtegida><Amigos /></RutaProtegida>} />
+          {/* <Route path="/amigos" element={<RutaProtegida><Amigos /></RutaProtegida>} /> */}
           <Route path="/perfil" element={<RutaProtegida><Perfil /></RutaProtegida>} />
           <Route path="/mercado" element={<RutaProtegida><Mercado /></RutaProtegida>} />
           <Route path="/login" element={<Login />} />
