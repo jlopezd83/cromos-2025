@@ -96,11 +96,19 @@ export default async function handler(req, res) {
           } else {
             // Si no hay periodos definidos, usar fallback basado en si ya usó trial
             console.log('No hay periodos definidos, usando fallback...');
-            const diasFallback = yaUsoTrial ? 30 : 15;
             const fallbackDate = new Date();
-            fallbackDate.setDate(fallbackDate.getDate() + diasFallback);
+            
+            if (yaUsoTrial) {
+              // Para usuarios que ya usaron trial: 1 mes completo
+              fallbackDate.setMonth(fallbackDate.getMonth() + 1);
+              console.log('Fallback 1 mes completo:', fallbackDate.toISOString());
+            } else {
+              // Para primera vez con trial: 15 días
+              fallbackDate.setDate(fallbackDate.getDate() + 15);
+              console.log('Fallback 15 días (trial):', fallbackDate.toISOString());
+            }
+            
             premiumUntil = fallbackDate.toISOString();
-            console.log(`Fallback ${diasFallback} días:`, premiumUntil);
           }
         } else {
           // Para pagos únicos, usar 30 días desde ahora
@@ -112,13 +120,20 @@ export default async function handler(req, res) {
         }
       } catch (error) {
         console.error('Error calculando premiumUntil:', error);
-        // Fallback: usar 15 días si no usó trial, 30 días si ya lo usó
-        const diasFallback = yaUsoTrial ? 30 : 15;
-        console.log(`Usando fallback de ${diasFallback} días...`);
+        // Fallback: usar 15 días si no usó trial, 1 mes si ya lo usó
         const fallbackDate = new Date();
-        fallbackDate.setDate(fallbackDate.getDate() + diasFallback);
+        
+        if (yaUsoTrial) {
+          // Para usuarios que ya usaron trial: 1 mes completo
+          fallbackDate.setMonth(fallbackDate.getMonth() + 1);
+          console.log('Fallback 1 mes completo:', fallbackDate.toISOString());
+        } else {
+          // Para primera vez con trial: 15 días
+          fallbackDate.setDate(fallbackDate.getDate() + 15);
+          console.log('Fallback 15 días (trial):', fallbackDate.toISOString());
+        }
+        
         premiumUntil = fallbackDate.toISOString();
-        console.log(`Fallback ${diasFallback} días:`, premiumUntil);
       }
       
       const { error } = await supabase
