@@ -10,6 +10,7 @@ export default function Perfil() {
   const [comprobando, setComprobando] = useState(false);
   const [disponible, setDisponible] = useState(null);
   const [editando, setEditando] = useState(false);
+  const [gestionandoSuscripcion, setGestionandoSuscripcion] = useState(false);
   const fileInputRef = useRef();
 
   useEffect(() => {
@@ -114,6 +115,29 @@ export default function Perfil() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // Gestionar suscripción premium
+  const handleGestionarSuscripcion = async () => {
+    if (!user) return;
+    setGestionandoSuscripcion(true);
+    try {
+      const res = await fetch('/api/create-billing-portal-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location = data.url;
+      } else {
+        alert('Error: ' + (data.error || 'No se pudo acceder al portal de gestión.'));
+      }
+    } catch (err) {
+      alert('Error al conectar con el portal de gestión.');
+    } finally {
+      setGestionandoSuscripcion(false);
+    }
+  };
+
   // Subida de avatar
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
@@ -199,6 +223,36 @@ export default function Perfil() {
         )}
         {mensaje && <div style={{ marginTop: 12, color: mensaje.includes('actualizado') ? '#22c55e' : '#dc2626', fontWeight: 'bold' }}>{mensaje}</div>}
       </form>
+      
+      {/* Botón de gestión de suscripción para usuarios premium */}
+      {perfil.premium && (
+        <div style={{ marginTop: 24, padding: 16, background: '#fef9c3', borderRadius: 12, border: '2px solid #facc15' }}>
+          <h3 style={{ color: '#b45309', marginBottom: 12, fontSize: '1.1em', fontWeight: 'bold' }}>
+            <span style={{ color: '#facc15', marginRight: 6 }}>★</span>
+            Gestión de Suscripción Premium
+          </h3>
+          <p style={{ color: '#b45309', marginBottom: 16, fontSize: '0.95em' }}>
+            Gestiona tu suscripción premium, actualiza métodos de pago o cancela tu plan.
+          </p>
+          <button
+            onClick={handleGestionarSuscripcion}
+            disabled={gestionandoSuscripcion}
+            style={{
+              background: '#facc15',
+              color: '#b45309',
+              border: 'none',
+              borderRadius: 8,
+              padding: '0.6em 1.2em',
+              fontWeight: 'bold',
+              fontSize: '1em',
+              cursor: gestionandoSuscripcion ? 'not-allowed' : 'pointer',
+              opacity: gestionandoSuscripcion ? 0.7 : 1
+            }}
+          >
+            {gestionandoSuscripcion ? 'Cargando...' : 'Gestiona tu suscripción'}
+          </button>
+        </div>
+      )}
     </div>
   );
 } 

@@ -45,11 +45,16 @@ export default async function handler(req, res) {
     }
     console.log('userId extraído:', userId);
     if (userId) {
-      const { error } = await supabase.from('perfiles').update({ premium: true, trial_used: true }).eq('id', userId);
+      // Obtén el customerId de Stripe
+      const customerId = session.customer || (subscription && subscription.customer);
+      const { error } = await supabase
+        .from('perfiles')
+        .update({ premium: true, trial_used: true, stripe_customer_id: customerId })
+        .eq('id', userId);
       if (error) {
         console.error('Error actualizando perfil en Supabase:', error);
       } else {
-        console.log('Perfil actualizado correctamente en Supabase:', userId);
+        console.log('Perfil actualizado correctamente en Supabase:', userId, customerId);
       }
     } else {
       console.error('No se encontró userId en metadata. No se actualiza Supabase.');

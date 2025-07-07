@@ -36,7 +36,7 @@ export default function Mercado() {
       // 1. Obtener todos los usuarios de la colección (excepto yo)
       supabase
         .from("usuarios_colecciones")
-        .select("id_usuario, perfiles(nombre_usuario, avatar_url)")
+        .select("id_usuario, perfiles(nombre_usuario, avatar_url, premium)")
         .eq("id_coleccion", coleccionSeleccionada)
         .neq("id_usuario", user.id)
         .then(async ({ data }) => {
@@ -44,7 +44,8 @@ export default function Mercado() {
           const usuarios = data.map(u => ({
             id: u.id_usuario,
             nombre: u.perfiles?.nombre_usuario || "Usuario",
-            avatar_url: u.perfiles?.avatar_url || ""
+            avatar_url: u.perfiles?.avatar_url || "",
+            premium: u.perfiles?.premium || false
           })).slice(0, 10); // Limitar a 10 usuarios
           setUsuariosColeccion(usuarios);
 
@@ -130,7 +131,12 @@ export default function Mercado() {
             <div key={usuario.id} style={{ background: '#f4f8fb', border: '2px solid #2563eb22', borderRadius: 16, padding: 28, boxShadow: '0 2px 12px #2563eb11', display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 1100, margin: '0 auto', minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 10 }}>
                 <img src={usuario.avatar_url || 'https://placehold.co/48x48?text=U'} alt={usuario.nombre} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid #2563eb' }} />
-                <span style={{ fontWeight: 600, color: '#2563eb', fontSize: '1.1em', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{usuario.nombre}</span>
+                <span style={{ fontWeight: 600, color: '#2563eb', fontSize: '1.1em', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {usuario.nombre}
+                  {usuario.premium && (
+                    <span title="Usuario premium" style={{ color: '#facc15', fontSize: '1.2em', marginLeft: 2, verticalAlign: 'middle', filter: 'drop-shadow(0 1px 2px #facc1555)' }}>★</span>
+                  )}
+                </span>
                 <span style={{ color: '#10b981', fontWeight: 500, fontSize: '1em', marginLeft: 8 }} title={`Tú puedes dar: ${yoPuedoDar.length}, él puede darte: ${elPuedeDar.length}`}>
                   <span style={{ marginRight: 8 }}>↔️</span>
                   <span style={{ color: '#10b981' }}>{yoPuedoDar.length}</span>
