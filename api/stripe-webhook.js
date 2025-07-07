@@ -47,33 +47,67 @@ export default async function handler(req, res) {
     if (userId) {
       // Obtén el customerId de Stripe
       const customerId = session.customer || (subscription && subscription.customer);
+      
+      // Calcular fecha de expiración del premium
+      let premiumUntil = null;
+      if (subscription) {
+        // Si hay suscripción, usar current_period_end
+        premiumUntil = new Date(subscription.current_period_end * 1000).toISOString();
+      } else {
+        // Para pagos únicos, usar 30 días desde ahora
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+        premiumUntil = thirtyDaysFromNow.toISOString();
+      }
+      
       const { error } = await supabase
         .from('perfiles')
-        .update({ premium: true, trial_used: true, stripe_customer_id: customerId })
+        .update({ 
+          premium: true, 
+          trial_used: true, 
+          stripe_customer_id: customerId,
+          premium_until: premiumUntil
+        })
         .eq('id', userId);
       if (error) {
         console.error('Error actualizando perfil en Supabase:', error);
       } else {
-        console.log('Perfil actualizado correctamente en Supabase:', userId, customerId);
+        console.log('Perfil actualizado correctamente en Supabase:', userId, customerId, premiumUntil);
       }
     } else {
       console.error('No se encontró userId en metadata. No se actualiza Supabase.');
     }
   }
-  // Manejar cancelación de suscripción
-  if (event.type === 'customer.subscription.deleted') {
-    const subscription = event.data.object;
-    const userId = subscription.metadata?.user_id;
-    console.log('Cancelación de suscripción. userId extraído:', userId);
-    if (userId) {
-      const { error } = await supabase.from('perfiles').update({ premium: false }).eq('id', userId);
-      if (error) {
-        console.error('Error quitando premium en Supabase:', error);
-      } else {
-        console.log('Premium quitado correctamente en Supabase:', userId);
+  // Manejar renovación de suscripción (cuando se paga el siguiente mes)
+  if (event.type === 'invoice.payment_succeeded') {
+    const invoice = event.data.object;
+    if (invoice.subscription) {
+      const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+      const customerId = subscription.customer;
+      
+      if (customerId) {
+        // Buscar usuario por stripe_customer_id
+        const { data: perfil, error: fetchError } = await supabase
+          .from('perfiles')
+          .select('id')
+          .eq('stripe_customer_id', customerId)
+          .single();
+        
+        if (perfil) {
+          // Actualizar fecha de expiración del premium
+          const premiumUntil = new Date(subscription.current_period_end * 1000).toISOString();
+          const { error } = await supabase
+            .from('perfiles')
+            .update({ premium_until: premiumUntil })
+            .eq('id', perfil.id);
+          
+          if (error) {
+            console.error('Error actualizando premium_until en Supabase:', error);
+          } else {
+            console.log('Premium_until actualizado correctamente:', perfil.id, premiumUntil);
+          }
+        }
       }
-    } else {
-      console.error('No se encontró userId en metadata al cancelar suscripción.');
     }
   }
   res.status(200).json({ received: true });

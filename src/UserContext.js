@@ -30,10 +30,26 @@ export function UserProvider({ children }) {
     setLoading(true);
     supabase
       .from('perfiles')
-      .select('id, nombre_usuario, avatar_url, premium')
+      .select('id, nombre_usuario, avatar_url, premium, premium_until')
       .eq('id', user.id)
       .single()
       .then(({ data }) => {
+        if (data) {
+          // Verificar si el premium ha expirado
+          const now = new Date();
+          const premiumUntil = data.premium_until ? new Date(data.premium_until) : null;
+          
+          if (data.premium && premiumUntil && now > premiumUntil) {
+            // Premium expirado, actualizar en la base de datos
+            supabase
+              .from('perfiles')
+              .update({ premium: false })
+              .eq('id', user.id);
+            
+            // Actualizar el estado local
+            data.premium = false;
+          }
+        }
         setPerfil(data || null);
         setLoading(false);
       });
