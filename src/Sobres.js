@@ -314,9 +314,6 @@ export default function Sobres() {
                 <div style={{ padding: '0 18px 18px 18px', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
                   {estado.sobresCompradosPendientes && estado.sobresCompradosPendientes.length > 0 && (
                     <div style={{ marginBottom: 10 }}>
-                      <div style={{ color: '#f59e42', fontWeight: 'bold', marginBottom: 6 }}>
-                        Abrir {estado.sobresCompradosPendientes.length} sobre{estado.sobresCompradosPendientes.length > 1 ? 's' : ''} comprado{estado.sobresCompradosPendientes.length > 1 ? 's' : ''}
-                      </div>
                       {estado.sobresCompradosPendientes.map(sobre => (
                         <button
                           key={sobre.id}
@@ -384,26 +381,6 @@ export default function Sobres() {
                   >
                     Comprar sobre
                   </button>
-                  {estado.cromosObtenidos && estado.cromosObtenidos.length > 0 && (
-                    <div style={{ marginTop: 12 }}>
-                      <h4 style={{ color: '#2563eb', fontSize: '1em', margin: 0 }}>¡Tus cromos obtenidos!</h4>
-                      <div style={{ display: 'flex', gap: '1em', flexWrap: 'wrap', justifyContent: 'center', marginTop: 8 }}>
-                        {estado.cromosObtenidos.map(cromo => (
-                          <div key={cromo.id} style={{
-                            background: '#f1f5fd',
-                            border: '2px solid #2563eb',
-                            borderRadius: 10,
-                            padding: 10,
-                            textAlign: 'center',
-                            width: 80
-                          }}>
-                            <img src={cromo.imagen_url || 'https://via.placeholder.com/60x60?text=Cromo'} alt={cromo.nombre} style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover', marginBottom: 6 }} />
-                            <div style={{ fontWeight: 'bold', color: '#2563eb', fontSize: '0.95em' }}>{cromo.nombre}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             );
