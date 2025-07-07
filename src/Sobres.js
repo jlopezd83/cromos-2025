@@ -485,7 +485,22 @@ export default function Sobres() {
                 );
               })}
             </div>
-            <button onClick={() => setShowModal(false)} style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '0.7em 2em', fontWeight: 'bold', fontSize: '1.1em', cursor: 'pointer', marginTop: 12 }}>Cerrar</button>
+            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 12 }}>
+              <button onClick={() => setShowModal(false)} style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '0.7em 2em', fontWeight: 'bold', fontSize: '1.1em', cursor: 'pointer' }}>Cerrar</button>
+              {/* Botón abrir otro si hay más sobres pendientes */}
+              {coleccionCompra && estadoColecciones[coleccionCompra]?.sobresCompradosPendientes?.length > 0 && (
+                <button
+                  onClick={() => {
+                    const siguienteSobre = estadoColecciones[coleccionCompra].sobresCompradosPendientes[0];
+                    setShowModal(false);
+                    if (siguienteSobre) {
+                      handleAbrirSobreComprado(coleccionCompra, siguienteSobre.id);
+                    }
+                  }}
+                  style={{ background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, padding: '0.7em 2em', fontWeight: 'bold', fontSize: '1.1em', cursor: 'pointer' }}
+                >Abrir otro</button>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -124,7 +124,18 @@ export default function ColeccionDetalle() {
   const total = cromos.length;
   const pegados = cromos.filter(c => getEstadoCromo(c.id) === "pegado").length;
   const porPegar = cromos.filter(c => getEstadoCromo(c.id) === "por_pegar").length;
-  const repetidos = getRepetidos();
+  // Calcular repetidos por cromo
+  const repetidosPorCromo = {};
+  cromos.forEach(cromo => {
+    // ¿Hay al menos un registro pegado=true para este cromo?
+    const tienePegado = misCromos.some(c => c.id_cromo === cromo.id && c.pegado);
+    // ¿Cuántos no pegados hay?
+    const noPegados = misCromos.filter(c => c.id_cromo === cromo.id && !c.pegado).length;
+    if (tienePegado && noPegados > 0) {
+      repetidosPorCromo[cromo.id] = noPegados;
+    }
+  });
+  const repetidos = Object.values(repetidosPorCromo).reduce((acc, n) => acc + n, 0);
   const faltantes = total - pegados;
   const porcentaje = total > 0 ? Math.round((pegados / total) * 100) : 0;
 
@@ -137,7 +148,12 @@ export default function ColeccionDetalle() {
           <h2 style={{ margin: 0 }}>{coleccion.nombre}</h2>
           <p style={{ margin: '0.5em 0 1em 0', color: '#333' }}>{coleccion.descripcion}</p>
           <div style={{ color: '#2563eb', fontWeight: 'bold', marginBottom: 8 }}>
-            {pegados}/{total} cromos ({porcentaje}%) | {repetidos} repetidos
+            {pegados}/{total} cromos ({porcentaje}%)
+            {repetidos > 0 && (
+              <span style={{ color: '#22c55e', fontWeight: 'bold', marginLeft: 16 }}>
+                {repetidos} repetidos
+              </span>
+            )}
           </div>
           {porPegar > 0 && (
             <div style={{ color: '#f59e42', fontWeight: 'bold', marginBottom: 8 }}>
@@ -151,6 +167,7 @@ export default function ColeccionDetalle() {
       <div className="cromos-grid">
         {cromos.map(cromo => {
           const estado = getEstadoCromo(cromo.id);
+          const numRepetidos = repetidosPorCromo[cromo.id] || 0;
           return (
             <div key={cromo.id} id={`cromo-${cromo.id}`} style={{
               background: estado === "pegado" ? '#dbeafe' : estado === "por_pegar" ? '#fef9c3' : '#f3f4f6',
@@ -162,6 +179,29 @@ export default function ColeccionDetalle() {
               position: 'relative',
               minWidth: 0
             }}>
+              {/* Circulito de repetidos */}
+              {numRepetidos > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  transform: 'translate(50%,-50%)',
+                  background: '#22c55e',
+                  color: '#fff',
+                  borderRadius: '50%',
+                  width: 26,
+                  height: 26,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold',
+                  fontSize: '1em',
+                  boxShadow: '0 1px 4px #22c55e33',
+                  zIndex: 2
+                }}>
+                  {numRepetidos}
+                </div>
+              )}
               <img src={cromo.imagen_url || 'https://via.placeholder.com/80x80?text=Cromo'} alt={cromo.nombre} style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', marginBottom: 8, opacity: estado === 'faltante' ? 0.12 : estado === 'por_pegar' ? 0.35 : 1 }} />
               <div style={{ fontWeight: 'bold', color: '#2563eb', fontSize: '1.1em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cromo.nombre}</div>
               <div style={{ fontSize: '0.9em', color: '#555', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cromo.descripcion}</div>
