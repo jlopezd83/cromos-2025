@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
 
   const priceIds = {
     premium: 'price_dummy_premium',
-    sobres: 'price_1RiHZXGEvd5WBxM8vcSexQaV',
+    sobres: 'price_1RiHe2GEvd5WBxM8gT7OZNkx',
   };
 
   try {
