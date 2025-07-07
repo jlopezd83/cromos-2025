@@ -32,17 +32,23 @@ export default async function handler(req, res) {
     const session = event.data.object;
     let userId = null;
     let subscriptionMeta = null;
-    // Buscar user_id en metadata de la suscripción o de la sesión
-    if (session.subscription) {
-      const subscription = await stripe.subscriptions.retrieve(session.subscription);
+    let subscription = null;
+    
+    // Buscar user_id en metadata de la sesión primero
+    if (session.metadata && session.metadata.user_id) {
+      userId = session.metadata.user_id;
+      console.log('userId encontrado en session.metadata:', userId);
+    }
+    
+    // Si no está en la sesión, buscar en la suscripción
+    if (!userId && session.subscription) {
+      subscription = await stripe.subscriptions.retrieve(session.subscription);
       subscriptionMeta = subscription.metadata;
       userId = subscription.metadata?.user_id;
       console.log('session.subscription:', session.subscription);
       console.log('subscription.metadata:', subscriptionMeta);
-    } else if (session.metadata) {
-      userId = session.metadata.user_id;
-      console.log('session.metadata:', session.metadata);
     }
+    
     console.log('userId extraído:', userId);
     if (userId) {
       // Obtén el customerId de Stripe

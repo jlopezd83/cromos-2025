@@ -19,13 +19,16 @@ export default async function handler(req, res) {
         },
       ],
       customer_email: email,
+      metadata: {
+        user_id: userId,
+      },
       subscription_data: {
         trial_period_days: 15,
         metadata: {
           user_id: userId,
         },
       },
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/premium?success=1`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/perfil`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/premium?canceled=1`,
     });
     return res.status(200).json({ url: session.url });
