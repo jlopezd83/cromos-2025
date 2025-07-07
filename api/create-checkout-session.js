@@ -5,13 +5,11 @@ module.exports = async (req, res) => {
     return res.status(405).send('Method Not Allowed');
   }
 
-  // Recibe el userId y el tipo de compra desde el frontend
   const { userId, type } = req.body;
 
-  // CAMBIA ESTOS IDs por los de tu Stripe cuando los tengas
   const priceIds = {
-    premium: 'price_XXXXXXXXXXXX', // ID de precio de suscripción
-    sobres: 'price_YYYYYYYYYYYY',  // ID de precio de pago único
+    premium: 'price_dummy_premium',
+    sobres: 'price_1RiHZXGEvd5WBxM8vcSexQaV',
   };
 
   try {
@@ -24,8 +22,8 @@ module.exports = async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: 'http://localhost:3000/success', // CAMBIA ESTO en producción
-      cancel_url: 'http://localhost:3000/cancel',   // CAMBIA ESTO en producción
+      success_url: 'http://localhost:3000/success',
+      cancel_url: 'http://localhost:3000/cancel',
       metadata: {
         userId,
         type,
