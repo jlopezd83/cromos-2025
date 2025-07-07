@@ -3,9 +3,9 @@ import { supabase } from "./supabaseClient";
 
 // Precios de packs (global)
 export const PACKS_SOBRES = [
-  { cantidad: 1, precio: 0.99 },
-  { cantidad: 5, precio: 3.99 },
-  { cantidad: 10, precio: 6.99 },
+  { cantidad: 1, precio: 0.99, priceId: 'price_1RiHe2GEvd5WBxM8gT7OZNkx' }, // Sustituye por el real si es necesario
+  { cantidad: 5, precio: 3.99, priceId: 'price_1RiItyGEvd5WBxM86Tk7NdWe' },
+  { cantidad: 10, precio: 6.99, priceId: 'price_1RiIuIGEvd5WBxM8JkP01iWe' },
 ];
 
 export default function Sobres() {
@@ -274,10 +274,15 @@ export default function Sobres() {
       alert('Debes iniciar sesión para comprar sobres.');
       return;
     }
+    const pack = PACKS_SOBRES.find(p => p.cantidad === cantidad);
+    if (!pack) {
+      alert('Pack no encontrado');
+      return;
+    }
     const res = await fetch('/api/create-checkout-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'sobres', userId: user.id, id_coleccion, cantidad }),
+      body: JSON.stringify({ priceId: pack.priceId, userId: user.id, id_coleccion, cantidad: pack.cantidad }),
     });
     const data = await res.json();
     if (data.url) {

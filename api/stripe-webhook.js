@@ -20,7 +20,8 @@ module.exports = async (req, res) => {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const { userId, type, id_coleccion } = session.metadata;
+    const { userId, type, id_coleccion, cantidad } = session.metadata || {};
+    const sobresACrear = parseInt(cantidad, 10) || 1;
 
     if (type === 'premium') {
       // Actualiza el usuario a premium en Supabase
@@ -28,18 +29,22 @@ module.exports = async (req, res) => {
         .from('perfiles')
         .update({ rol: 'premium' })
         .eq('id', userId);
-    } else if (type === 'sobres') {
-      // Añade sobre comprado al usuario, pendiente de abrir
-      await supabase
-        .from('sobres')
-        .insert([{
+    } else if (type === 'sobres' || session.mode === 'payment') {
+      // Añade sobres comprados al usuario, todos pendientes de abrir
+      const sobres = [];
+      for (let i = 0; i < sobresACrear; i++) {
+        sobres.push({
           id_usuario: userId,
           id_coleccion: id_coleccion,
           comprado: true,
           gratuito: false,
           abierto: false,
           fecha_apertura: new Date().toISOString()
-        }]);
+        });
+      }
+      if (sobres.length > 0) {
+        await supabase.from('sobres').insert(sobres);
+      }
     }
   }
 
