@@ -13,6 +13,7 @@ export default function MisColecciones() {
   const [cromosAntes, setCromosAntes] = useState([]); // ids de cromos que tenía antes
   const [porColeccionPorPegar, setPorColeccionPorPegar] = useState({});
   const [repetidosPorColeccion, setRepetidosPorColeccion] = useState({});
+  const [ordenAscendente, setOrdenAscendente] = useState(true);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -23,16 +24,20 @@ export default function MisColecciones() {
   useEffect(() => {
     async function fetchData() {
       if (!user) return;
-      // Obtener colecciones a las que está unido
+      // Obtener colecciones a las que está unido, incluyendo fecha_union
       const { data: unidas } = await supabase
         .from("usuarios_colecciones")
-        .select("id_coleccion")
-        .eq("id_usuario", user.id);
+        .select("id_coleccion, fecha_union")
+        .eq("id_usuario", user.id)
+        .order("fecha_union", { ascending: true });
       if (!unidas || unidas.length === 0) {
         setMisColecciones([]);
         return;
       }
+      // Mapear ids y fechas
       const ids = unidas.map(u => u.id_coleccion);
+      const fechasUnion = {};
+      unidas.forEach(u => { fechasUnion[u.id_coleccion] = u.fecha_union; });
       // Obtener info de las colecciones
       const { data: colecciones } = await supabase
         .from("colecciones")
@@ -63,8 +68,10 @@ export default function MisColecciones() {
             if (noPegados > 0) totalRepetidos += noPegados;
           });
         }
-        coleccionesConProgreso.push({ ...col, totalCromos, pegados, totalRepetidos });
+        coleccionesConProgreso.push({ ...col, totalCromos, pegados, totalRepetidos, fecha_union: fechasUnion[col.id] });
       }
+      // Ordenar por fecha_union
+      coleccionesConProgreso.sort((a, b) => ordenAscendente ? new Date(a.fecha_union) - new Date(b.fecha_union) : new Date(b.fecha_union) - new Date(a.fecha_union));
       setMisColecciones(coleccionesConProgreso);
       // Obtener info de sobres para cada colección
       let sobres = {};
@@ -96,7 +103,7 @@ export default function MisColecciones() {
       setSobresInfo(sobres);
     }
     fetchData();
-  }, [user, reclamando]);
+  }, [user, reclamando, ordenAscendente]);
 
   // Calcular cromos por pegar para cada colección (condición robusta)
   useEffect(() => {
@@ -250,6 +257,14 @@ export default function MisColecciones() {
 
   return (
     <div className="main-content">
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+        <button
+          onClick={() => setOrdenAscendente(o => !o)}
+          style={{ background: '#f1f5fd', color: '#2563eb', border: '1px solid #2563eb', borderRadius: 8, padding: '0.4em 1.2em', fontWeight: 'bold', fontSize: '1em', cursor: 'pointer' }}
+        >
+          {ordenAscendente ? 'Más antigua primero' : 'Más reciente primero'}
+        </button>
+      </div>
       <h2>Mis colecciones</h2>
       {mensaje && <p>{mensaje}</p>}
       {user ? (
@@ -271,9 +286,9 @@ export default function MisColecciones() {
                     <span style={{ color: '#2563eb', fontWeight: 500 }}>
                       {col.pegados}/{col.totalCromos} cromos ({porcentaje}%)
                     </span>
-                    {repetidosPorColeccion[col.id] > 0 && (
-                      <span style={{ color: '#f59e42', fontWeight: 'bold', marginLeft: 8 }}>
-                        {repetidosPorColeccion[col.id]} repetidos
+                    {col.totalRepetidos > 0 && (
+                      <span style={{ color: '#22c55e', fontWeight: 'bold', marginLeft: 12 }}>
+                        {col.totalRepetidos} repetidos
                       </span>
                     )}
                     {porPegar > 0 && (
