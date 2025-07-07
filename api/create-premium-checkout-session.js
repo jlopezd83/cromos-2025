@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });
   }
-  const { userId, email, priceId } = req.body;
+  const { userId, email, priceId, yaUsoTrial } = req.body;
   if (!userId || !priceId) {
     return res.status(400).json({ error: 'Faltan parámetros' });
   }
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
         user_id: userId,
       },
       subscription_data: {
-        trial_period_days: 15,
+        ...(yaUsoTrial ? {} : { trial_period_days: 15 }),
         metadata: {
           user_id: userId,
         },

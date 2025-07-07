@@ -7,6 +7,7 @@ export function UserProvider({ children }) {
   const [user, setUser] = useState(null); // sesión de Supabase
   const [perfil, setPerfil] = useState(null); // datos de la tabla perfiles
   const [loading, setLoading] = useState(true);
+  const [premiumExpired, setPremiumExpired] = useState(false); // para mostrar mensaje de expiración
 
   useEffect(() => {
     // Escuchar cambios de sesión
@@ -30,7 +31,7 @@ export function UserProvider({ children }) {
     setLoading(true);
     supabase
       .from('perfiles')
-      .select('id, nombre_usuario, avatar_url, premium, premium_until')
+      .select('id, nombre_usuario, avatar_url, premium, premium_until, trial_used')
       .eq('id', user.id)
       .single()
       .then(({ data }) => {
@@ -39,16 +40,7 @@ export function UserProvider({ children }) {
           const now = new Date();
           const premiumUntil = data.premium_until ? new Date(data.premium_until) : null;
           
-          console.log('Verificando premium:', {
-            userId: user.id,
-            premium: data.premium,
-            premiumUntil: data.premium_until,
-            now: now.toISOString(),
-            isExpired: premiumUntil && now > premiumUntil
-          });
-          
           if (data.premium && premiumUntil && now > premiumUntil) {
-            console.log('Premium expirado, actualizando...');
             // Premium expirado, actualizar en la base de datos
             supabase
               .from('perfiles')
@@ -58,12 +50,16 @@ export function UserProvider({ children }) {
                 if (error) {
                   console.error('Error actualizando premium:', error);
                 } else {
-                  console.log('Premium actualizado correctamente en BD');
+                  // Mostrar mensaje de expiración
+                  setPremiumExpired(true);
                 }
               });
             
             // Actualizar el estado local
             data.premium = false;
+          } else if (premiumUntil && now > premiumUntil) {
+            // Si el premium ya está false pero la fecha expiró, mostrar mensaje
+            setPremiumExpired(true);
           }
         }
         setPerfil(data || null);
@@ -80,7 +76,6 @@ export function UserProvider({ children }) {
       const premiumUntil = perfil.premium_until ? new Date(perfil.premium_until) : null;
       
       if (premiumUntil && now > premiumUntil) {
-        console.log('Premium expirado en verificación periódica');
         // Actualizar en BD y estado local
         supabase
           .from('perfiles')
@@ -101,7 +96,7 @@ export function UserProvider({ children }) {
   }, [perfil, user]);
 
   return (
-    <UserContext.Provider value={{ user, perfil, loading }}>
+    <UserContext.Provider value={{ user, perfil, loading, premiumExpired, setPremiumExpired }}>
       {children}
     </UserContext.Provider>
   );

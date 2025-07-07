@@ -26,7 +26,6 @@ export default async function handler(req, res) {
   }
 
   console.log('Evento recibido:', event.type);
-  console.log('Event data object:', JSON.stringify(event.data.object, null, 2));
 
   // Manejar eventos relevantes
   if (event.type === 'checkout.session.completed' || event.type === 'customer.subscription.created') {
@@ -38,7 +37,6 @@ export default async function handler(req, res) {
     // Buscar user_id en metadata de la sesión primero
     if (session.metadata && session.metadata.user_id) {
       userId = session.metadata.user_id;
-      console.log('userId encontrado en session.metadata:', userId);
     }
     
     // Si no está en la sesión, buscar en la suscripción
@@ -47,19 +45,9 @@ export default async function handler(req, res) {
         subscription = await stripe.subscriptions.retrieve(session.subscription);
         subscriptionMeta = subscription.metadata;
         userId = subscription.metadata?.user_id;
-        console.log('session.subscription:', session.subscription);
-        console.log('subscription.metadata:', subscriptionMeta);
       } catch (error) {
         console.error('Error obteniendo subscription:', error);
       }
-    }
-    
-    console.log('userId extraído:', userId);
-    console.log('subscription variable:', subscription);
-    console.log('session.subscription:', session.subscription);
-    if (subscription) {
-      console.log('subscription.current_period_end:', subscription.current_period_end);
-      console.log('subscription.status:', subscription.status);
     }
     if (userId) {
       // Obtén el customerId de Stripe
@@ -71,13 +59,11 @@ export default async function handler(req, res) {
         if (subscription && subscription.current_period_end) {
           // Si hay suscripción, usar current_period_end
           premiumUntil = new Date(subscription.current_period_end * 1000).toISOString();
-          console.log('Usando subscription.current_period_end:', subscription.current_period_end, '->', premiumUntil);
         } else if (session.subscription) {
           // Si no tenemos subscription pero hay session.subscription, obtenerlo
           const retrievedSubscription = await stripe.subscriptions.retrieve(session.subscription);
           if (retrievedSubscription.current_period_end) {
             premiumUntil = new Date(retrievedSubscription.current_period_end * 1000).toISOString();
-            console.log('Obteniendo subscription desde session.subscription:', retrievedSubscription.current_period_end, '->', premiumUntil);
           } else {
             throw new Error('No current_period_end en retrievedSubscription');
           }
@@ -86,7 +72,6 @@ export default async function handler(req, res) {
           const thirtyDaysFromNow = new Date();
           thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
           premiumUntil = thirtyDaysFromNow.toISOString();
-          console.log('Usando 30 días para pago único:', premiumUntil);
         }
       } catch (error) {
         console.error('Error calculando premiumUntil:', error);
@@ -94,7 +79,6 @@ export default async function handler(req, res) {
         const fifteenDaysFromNow = new Date();
         fifteenDaysFromNow.setDate(fifteenDaysFromNow.getDate() + 15);
         premiumUntil = fifteenDaysFromNow.toISOString();
-        console.log('Usando fallback de 15 días:', premiumUntil);
       }
       
       const { error } = await supabase
@@ -108,8 +92,6 @@ export default async function handler(req, res) {
         .eq('id', userId);
       if (error) {
         console.error('Error actualizando perfil en Supabase:', error);
-      } else {
-        console.log('Perfil actualizado correctamente en Supabase:', userId, customerId, premiumUntil);
       }
     } else {
       console.error('No se encontró userId en metadata. No se actualiza Supabase.');
@@ -140,8 +122,6 @@ export default async function handler(req, res) {
           
           if (error) {
             console.error('Error actualizando premium_until en Supabase:', error);
-          } else {
-            console.log('Premium_until actualizado correctamente:', perfil.id, premiumUntil);
           }
         }
       }

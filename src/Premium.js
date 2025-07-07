@@ -7,6 +7,9 @@ const PREMIUM_PRICE_ID = 'price_1RiLzVGEvd5WBxM86CXpnIBz';
 export default function Premium() {
   const { perfil, user } = useUser();
 
+  // Verificar si el usuario ya usó el trial
+  const yaUsoTrial = perfil?.trial_used;
+
   const handlePremiumCheckout = async () => {
     if (!user || !perfil) {
       alert('Debes iniciar sesión para suscribirte.');
@@ -20,6 +23,7 @@ export default function Premium() {
           userId: user.id,
           email: user.email,
           priceId: PREMIUM_PRICE_ID,
+          yaUsoTrial: yaUsoTrial,
         }),
       });
       const data = await res.json();
@@ -98,10 +102,10 @@ export default function Premium() {
                   marginBottom: 8,
                   letterSpacing: 1
                 }}>
-                Probar ahora gratis por 15 días
+                {yaUsoTrial ? 'Suscribirse ahora por 4,99€/mes' : 'Probar ahora gratis por 15 días'}
               </button>
               <div style={{ color: '#e0e7ef', fontSize: '0.98em', marginTop: 8 }}>
-                Sin compromiso. Cancela cuando quieras.
+                {yaUsoTrial ? 'Cobro inmediato. Cancela cuando quieras.' : 'Sin compromiso. Cancela cuando quieras.'}
               </div>
             </div>
           </>

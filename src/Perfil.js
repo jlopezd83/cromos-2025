@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "./supabaseClient";
+import { useUser } from "./UserContext";
 
 export default function Perfil() {
+  const { premiumExpired, setPremiumExpired } = useUser();
   const [user, setUser] = useState(null);
   const [perfil, setPerfil] = useState({ nombre_usuario: "", avatar_url: "", premium: false });
   const [form, setForm] = useState({ nombre_usuario: "", avatar_url: "" });
@@ -158,6 +160,57 @@ export default function Perfil() {
   return (
     <div className="main-content" style={{ maxWidth: 400, margin: '0 auto' }}>
       <h2>Mi perfil</h2>
+      
+      {/* Mensaje de expiración de premium */}
+      {premiumExpired && (
+        <div style={{
+          background: '#fef2f2',
+          border: '2px solid #fecaca',
+          borderRadius: 12,
+          padding: 16,
+          marginBottom: 20,
+          textAlign: 'center'
+        }}>
+          <h3 style={{ color: '#dc2626', marginBottom: 8, fontSize: '1.1em', fontWeight: 'bold' }}>
+            ⚠️ Premium Expirado
+          </h3>
+          <p style={{ color: '#dc2626', marginBottom: 16, fontSize: '0.95em' }}>
+            Tu suscripción premium ha expirado. Ya no tienes acceso a las ventajas premium.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <button
+              onClick={() => window.location.href = '/premium'}
+              style={{
+                background: '#dc2626',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                padding: '0.6em 1.2em',
+                fontWeight: 'bold',
+                fontSize: '0.9em',
+                cursor: 'pointer'
+              }}
+            >
+              Reactivar Premium
+            </button>
+            <button
+              onClick={() => setPremiumExpired(false)}
+              style={{
+                background: '#f3f4f6',
+                color: '#6b7280',
+                border: '1px solid #d1d5db',
+                borderRadius: 8,
+                padding: '0.6em 1.2em',
+                fontWeight: 'bold',
+                fontSize: '0.9em',
+                cursor: 'pointer'
+              }}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
       {perfil.premium && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12 }}>
           <span style={{ fontSize: '1.5em', color: '#facc15', filter: 'drop-shadow(0 1px 2px #facc1555)' }}>★</span>
