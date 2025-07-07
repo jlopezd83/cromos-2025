@@ -1,7 +1,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
-  const { priceId, userId, id_coleccion } = req.body;
+  const { priceId, userId, id_coleccion, cantidad } = req.body;
 
   if (!priceId) {
     return res.status(400).json({ error: 'Falta priceId' });
@@ -21,6 +21,7 @@ export default async function handler(req, res) {
     metadata: {
       userId,
       id_coleccion,
+      cantidad, // ahora se envía la cantidad
     },
   });
 
