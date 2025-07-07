@@ -56,29 +56,42 @@ export default async function handler(req, res) {
       // Calcular fecha de expiración del premium
       let premiumUntil = null;
       try {
+        console.log('=== DEBUG PREMIUM UNTIL ===');
+        console.log('subscription:', subscription ? 'existe' : 'no existe');
+        console.log('session.subscription:', session.subscription);
+        
         if (subscription && subscription.current_period_end) {
           // Si hay suscripción, usar current_period_end
+          console.log('subscription.current_period_end:', subscription.current_period_end);
           premiumUntil = new Date(subscription.current_period_end * 1000).toISOString();
+          console.log('Usando subscription.current_period_end:', premiumUntil);
         } else if (session.subscription) {
           // Si no tenemos subscription pero hay session.subscription, obtenerlo
+          console.log('Obteniendo subscription desde session.subscription...');
           const retrievedSubscription = await stripe.subscriptions.retrieve(session.subscription);
+          console.log('retrievedSubscription.current_period_end:', retrievedSubscription.current_period_end);
           if (retrievedSubscription.current_period_end) {
             premiumUntil = new Date(retrievedSubscription.current_period_end * 1000).toISOString();
+            console.log('Usando retrievedSubscription.current_period_end:', premiumUntil);
           } else {
             throw new Error('No current_period_end en retrievedSubscription');
           }
         } else {
           // Para pagos únicos, usar 30 días desde ahora
+          console.log('No hay subscription, usando 30 días...');
           const thirtyDaysFromNow = new Date();
           thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
           premiumUntil = thirtyDaysFromNow.toISOString();
+          console.log('Usando 30 días:', premiumUntil);
         }
       } catch (error) {
         console.error('Error calculando premiumUntil:', error);
         // Fallback: usar 15 días para trials
+        console.log('Usando fallback de 15 días...');
         const fifteenDaysFromNow = new Date();
         fifteenDaysFromNow.setDate(fifteenDaysFromNow.getDate() + 15);
         premiumUntil = fifteenDaysFromNow.toISOString();
+        console.log('Fallback 15 días:', premiumUntil);
       }
       
       const { error } = await supabase
