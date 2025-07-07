@@ -10,6 +10,7 @@ import Perfil from "./Perfil";
 import Amigos from "./Amigos";
 import Sobres from "./Sobres";
 import Mercado from "./Mercado";
+import Premium from "./Premium";
 import { supabase } from "./supabaseClient";
 import "./App.css";
 
@@ -128,6 +129,7 @@ function App() {
           {/* <Route path="/amigos" element={<RutaProtegida><Amigos /></RutaProtegida>} /> */}
           <Route path="/perfil" element={<RutaProtegida><Perfil /></RutaProtegida>} />
           <Route path="/mercado" element={<RutaProtegida><Mercado /></RutaProtegida>} />
+          <Route path="/premium" element={<RutaProtegida><Premium /></RutaProtegida>} />
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Registro />} />
         </Routes>

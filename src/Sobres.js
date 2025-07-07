@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
+import { useUser } from './UserContext';
 
 // Precios de packs (global)
 export const PACKS_SOBRES = [
@@ -9,6 +10,7 @@ export const PACKS_SOBRES = [
 ];
 
 export default function Sobres() {
+  const { perfil, loading: loadingPerfil } = useUser();
   const [user, setUser] = useState(null);
   const [colecciones, setColecciones] = useState([]); // [{id, nombre, ...}]
   const [estadoColecciones, setEstadoColecciones] = useState({}); // {id_coleccion: {ultimaApertura, puedeReclamar, abriendo, cromosObtenidos, mensaje}}
@@ -55,11 +57,13 @@ export default function Sobres() {
                 .order("fecha_apertura", { ascending: false })
                 .limit(1);
               let ultimaApertura = sobresGratuitos && sobresGratuitos.length > 0 ? new Date(sobresGratuitos[0].fecha_apertura) : null;
+              // --- CAMBIO: tiempo de espera según premium ---
+              const horasEspera = perfil?.premium ? 10 : 24;
               let puedeReclamar = true;
               if (ultimaApertura) {
                 const ahora = new Date();
                 const diff = ahora - ultimaApertura;
-                puedeReclamar = diff > 24 * 60 * 60 * 1000;
+                puedeReclamar = diff > horasEspera * 60 * 60 * 1000;
               }
               // Buscar sobres comprados pendientes de abrir
               const { data: sobresComprados } = await supabase
@@ -84,7 +88,7 @@ export default function Sobres() {
           }
         });
     }
-  }, [user]);
+  }, [user, perfil]);
 
   // Reclamar sobre gratuito para una colección
   const handleReclamar = async (id_coleccion) => {
@@ -278,8 +282,9 @@ export default function Sobres() {
             // Calcular tiempo restante
             let tiempoRestante = "";
             if (estado.ultimaApertura && !estado.puedeReclamar) {
+              const horasEspera = perfil?.premium ? 10 : 24;
               const ahora = new Date();
-              const diff = 24 * 60 * 60 * 1000 - (ahora - estado.ultimaApertura);
+              const diff = horasEspera * 60 * 60 * 1000 - (ahora - estado.ultimaApertura);
               if (diff > 0) {
                 const horas = Math.floor(diff / (60 * 60 * 1000));
                 const minutos = Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000));

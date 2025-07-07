@@ -3,7 +3,7 @@ import { supabase } from "./supabaseClient";
 
 export default function Perfil() {
   const [user, setUser] = useState(null);
-  const [perfil, setPerfil] = useState({ nombre_usuario: "", avatar_url: "", rol: "" });
+  const [perfil, setPerfil] = useState({ nombre_usuario: "", avatar_url: "", premium: false });
   const [form, setForm] = useState({ nombre_usuario: "", avatar_url: "" });
   const [mensaje, setMensaje] = useState("");
   const [cargando, setCargando] = useState(true);
@@ -23,7 +23,7 @@ export default function Perfil() {
       setCargando(true);
       supabase
         .from("perfiles")
-        .select("nombre_usuario, avatar_url, rol")
+        .select("nombre_usuario, avatar_url, premium")
         .eq("id", user.id)
         .single()
         .then(({ data }) => {
@@ -134,6 +134,12 @@ export default function Perfil() {
   return (
     <div className="main-content" style={{ maxWidth: 400, margin: '0 auto' }}>
       <h2>Mi perfil</h2>
+      {perfil.premium && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12 }}>
+          <span style={{ fontSize: '1.5em', color: '#facc15', filter: 'drop-shadow(0 1px 2px #facc1555)' }}>★</span>
+          <span style={{ color: '#facc15', fontWeight: 'bold', fontSize: '1.1em', letterSpacing: 1 }}>Premium</span>
+        </div>
+      )}
       <form onSubmit={handleGuardar} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           <img

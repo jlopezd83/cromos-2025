@@ -1,59 +1,54 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
-const getRawBody = require('raw-body');
 
-// Inicializa Supabase con la clave de servicio (no la pública)
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-module.exports = async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  let event;
-
-  // Lee el raw body
-  const rawBody = await getRawBody(req);
-
-  try {
-    event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    const { userId, type, id_coleccion, cantidad } = session.metadata || {};
-    const sobresACrear = parseInt(cantidad, 10) || 1;
-
-    if (type === 'premium') {
-      // Actualiza el usuario a premium en Supabase
-      await supabase
-        .from('perfiles')
-        .update({ rol: 'premium' })
-        .eq('id', userId);
-    } else if (type === 'sobres' || session.mode === 'payment') {
-      // Añade sobres comprados al usuario, todos pendientes de abrir
-      const sobres = [];
-      for (let i = 0; i < sobresACrear; i++) {
-        sobres.push({
-          id_usuario: userId,
-          id_coleccion: id_coleccion,
-          comprado: true,
-          gratuito: false,
-          abierto: false,
-          fecha_apertura: new Date().toISOString()
-        });
-      }
-      if (sobres.length > 0) {
-        await supabase.from('sobres').insert(sobres);
-      }
-    }
-  }
-
-  res.status(200).json({ received: true });
-};
-
-// Desactiva el bodyParser de Vercel para Stripe
 export const config = {
   api: {
     bodyParser: false,
   },
 };
+
+const buffer = require('micro').buffer;
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).end('Method Not Allowed');
+  }
+  const sig = req.headers['stripe-signature'];
+  let event;
+  try {
+    const rawBody = await buffer(req);
+    event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // Manejar eventos relevantes
+  if (event.type === 'checkout.session.completed' || event.type === 'customer.subscription.created') {
+    const session = event.data.object;
+    let userId = null;
+    // Buscar user_id en metadata de la suscripción o de la sesión
+    if (session.subscription) {
+      // Obtener la suscripción para leer la metadata
+      const subscription = await stripe.subscriptions.retrieve(session.subscription);
+      userId = subscription.metadata?.user_id;
+    } else if (session.metadata) {
+      userId = session.metadata.user_id;
+    }
+    if (userId) {
+      // Marcar premium y trial_used en Supabase
+      await supabase.from('perfiles').update({ premium: true, trial_used: true }).eq('id', userId);
+    }
+  }
+  // Manejar cancelación de suscripción
+  if (event.type === 'customer.subscription.deleted') {
+    const subscription = event.data.object;
+    const userId = subscription.metadata?.user_id;
+    if (userId) {
+      // Quitar premium pero no tocar trial_used
+      await supabase.from('perfiles').update({ premium: false }).eq('id', userId);
+    }
+  }
+  res.status(200).json({ received: true });
+}
