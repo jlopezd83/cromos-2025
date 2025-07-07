@@ -5,7 +5,7 @@ module.exports = async (req, res) => {
     return res.status(405).send('Method Not Allowed');
   }
 
-  const { userId, type } = req.body;
+  const { userId, type, id_coleccion } = req.body;
 
   const priceIds = {
     premium: 'price_dummy_premium',
@@ -22,11 +22,12 @@ module.exports = async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: 'http://localhost:3000/success',
+      success_url: 'https://cromos-2025-git-main-jlopezd83s-projects.vercel.app/sobres',
       cancel_url: 'http://localhost:3000/cancel',
       metadata: {
         userId,
         type,
+        id_coleccion // <--- aquí va el id de la colección
       },
     });
     res.status(200).json({ url: session.url });

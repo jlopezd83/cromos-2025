@@ -16,7 +16,7 @@ module.exports = async (req, res) => {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const { userId, type } = session.metadata;
+    const { userId, type, id_coleccion } = session.metadata;
 
     if (type === 'premium') {
       // Actualiza el usuario a premium en Supabase
@@ -25,10 +25,17 @@ module.exports = async (req, res) => {
         .update({ rol: 'premium' })
         .eq('id', userId);
     } else if (type === 'sobres') {
-      // Añade sobres al usuario (ajusta la lógica según tu modelo)
+      // Añade sobre comprado al usuario, pendiente de abrir
       await supabase
         .from('sobres')
-        .insert([{ user_id: userId, comprado: true, fecha: new Date().toISOString() }]);
+        .insert([{
+          id_usuario: userId,
+          id_coleccion: id_coleccion,
+          comprado: true,
+          gratuito: false,
+          abierto: false,
+          fecha_apertura: new Date().toISOString()
+        }]);
     }
   }
 
