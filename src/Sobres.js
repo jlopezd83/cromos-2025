@@ -28,11 +28,11 @@ export default function Sobres() {
               imagen_portada_url: c.colecciones?.imagen_portada_url || '',
             }));
             setColecciones(colls);
-            // Para cada colección, obtener el estado de sobres gratuitos
+            // Para cada colección, obtener el estado de sobres gratuitos y comprados pendientes
             const estados = {};
             for (let col of colls) {
               // Buscar la última apertura de sobre gratuito para esta colección
-              const { data: sobres } = await supabase
+              const { data: sobresGratuitos } = await supabase
                 .from("sobres")
                 .select("fecha_apertura")
                 .eq("id_usuario", user.id)
@@ -40,19 +40,28 @@ export default function Sobres() {
                 .eq("gratuito", true)
                 .order("fecha_apertura", { ascending: false })
                 .limit(1);
-              let ultimaApertura = sobres && sobres.length > 0 ? new Date(sobres[0].fecha_apertura) : null;
+              let ultimaApertura = sobresGratuitos && sobresGratuitos.length > 0 ? new Date(sobresGratuitos[0].fecha_apertura) : null;
               let puedeReclamar = true;
               if (ultimaApertura) {
                 const ahora = new Date();
                 const diff = ahora - ultimaApertura;
                 puedeReclamar = diff > 24 * 60 * 60 * 1000;
               }
+              // Buscar sobres comprados pendientes de abrir
+              const { data: sobresComprados } = await supabase
+                .from("sobres")
+                .select("id")
+                .eq("id_usuario", user.id)
+                .eq("id_coleccion", col.id)
+                .eq("gratuito", false)
+                .eq("abierto", false);
               estados[col.id] = {
                 ultimaApertura,
                 puedeReclamar,
                 abriendo: false,
                 cromosObtenidos: [],
-                mensaje: ""
+                mensaje: "",
+                sobresCompradosPendientes: sobresComprados || []
               };
             }
             setEstadoColecciones(estados);
@@ -153,6 +162,79 @@ export default function Sobres() {
     }));
   };
 
+  // Abrir sobre comprado para una colección
+  const handleAbrirSobreComprado = async (id_coleccion, id_sobre) => {
+    setEstadoColecciones(prev => ({
+      ...prev,
+      [id_coleccion]: { ...prev[id_coleccion], abriendo: true, mensaje: "" }
+    }));
+    // Obtener todos los cromos de esa colección
+    const { data: cromos } = await supabase
+      .from("cromos")
+      .select("id, nombre, imagen_url")
+      .eq("id_coleccion", id_coleccion);
+    if (!cromos || cromos.length < 5) {
+      setEstadoColecciones(prev => ({
+        ...prev,
+        [id_coleccion]: { ...prev[id_coleccion], mensaje: "No hay suficientes cromos en la colección.", abriendo: false }
+      }));
+      return;
+    }
+    // Elegir 5 cromos aleatorios
+    const seleccionados = [];
+    const indices = new Set();
+    while (indices.size < 5) {
+      indices.add(Math.floor(Math.random() * cromos.length));
+    }
+    for (let idx of indices) {
+      seleccionados.push(cromos[idx]);
+    }
+    // Insertar cromos obtenidos en sobres_cromos
+    for (let cromo of seleccionados) {
+      await supabase.from("sobres_cromos").insert({
+        id_sobre: id_sobre,
+        id_cromo: cromo.id,
+      });
+      // Añadir cromo al usuario (usuarios_cromos): si ya lo tiene y no pegado, suma cantidad; si no, crea registro
+      const { data: userCromo } = await supabase
+        .from("usuarios_cromos")
+        .select("id, cantidad")
+        .eq("id_usuario", user.id)
+        .eq("id_cromo", cromo.id)
+        .eq("pegado", false)
+        .single();
+      if (userCromo) {
+        await supabase
+          .from("usuarios_cromos")
+          .update({ cantidad: userCromo.cantidad + 1 })
+          .eq("id", userCromo.id);
+      } else {
+        await supabase.from("usuarios_cromos").insert({
+          id_usuario: user.id,
+          id_cromo: cromo.id,
+          cantidad: 1,
+          pegado: false,
+        });
+      }
+    }
+    // Marcar el sobre como abierto
+    await supabase
+      .from("sobres")
+      .update({ abierto: true })
+      .eq("id", id_sobre);
+    setEstadoColecciones(prev => ({
+      ...prev,
+      [id_coleccion]: {
+        ...prev[id_coleccion],
+        cromosObtenidos: seleccionados,
+        mensaje: "¡Has abierto un sobre comprado!",
+        abriendo: false,
+        // Elimina el sobre pendiente de la lista
+        sobresCompradosPendientes: prev[id_coleccion].sobresCompradosPendientes.filter(s => s.id !== id_sobre)
+      }
+    }));
+  };
+
   // Comprar sobre para una colección
   async function handleCheckoutSobres(id_coleccion) {
     if (!user) {
@@ -220,6 +302,32 @@ export default function Sobres() {
                   </div>
                 </div>
                 <div style={{ padding: '0 18px 18px 18px', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
+                  {estado.sobresCompradosPendientes && estado.sobresCompradosPendientes.length > 0 && (
+                    <div style={{ marginBottom: 10 }}>
+                      {estado.sobresCompradosPendientes.map(sobre => (
+                        <button
+                          key={sobre.id}
+                          onClick={() => handleAbrirSobreComprado(col.id, sobre.id)}
+                          style={{
+                            background: '#f59e42',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: 8,
+                            padding: '0.7em 1.5em',
+                            fontWeight: 'bold',
+                            fontSize: '1em',
+                            marginBottom: 8,
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 8px #f59e4222',
+                            transition: 'background 0.2s',
+                            width: '100%'
+                          }}
+                        >
+                          Abrir sobre comprado
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {estado.mensaje && <p style={{ margin: '0.5em 0', color: '#2563eb', fontWeight: 500 }}>{estado.mensaje}</p>}
                   {estado.puedeReclamar ? (
                     <button
