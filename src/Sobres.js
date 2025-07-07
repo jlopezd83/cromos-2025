@@ -9,6 +9,17 @@ export default function Sobres() {
   const [cromosModal, setCromosModal] = useState([]);
   const [mensajeModal, setMensajeModal] = useState("");
   const [cromosAntes, setCromosAntes] = useState([]); // ids de cromos que tenía antes
+  const [showCompra, setShowCompra] = useState(false);
+  const [packSeleccionado, setPackSeleccionado] = useState(1);
+  const [coleccionCompra, setColeccionCompra] = useState(null);
+
+  // Precios de packs
+  const packs = [
+    { cantidad: 1, precio: 1.00 },
+    { cantidad: 3, precio: 2.70 },
+    { cantidad: 5, precio: 4.00 },
+    { cantidad: 10, precio: 7.00 },
+  ];
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -258,8 +269,8 @@ export default function Sobres() {
     setShowModal(true);
   };
 
-  // Comprar sobre para una colección
-  async function handleCheckoutSobres(id_coleccion) {
+  // Adaptar checkout para recibir cantidad
+  async function handleCheckoutSobres(id_coleccion, cantidad) {
     if (!user) {
       alert('Debes iniciar sesión para comprar sobres.');
       return;
@@ -267,7 +278,7 @@ export default function Sobres() {
     const res = await fetch('/api/create-checkout-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'sobres', userId: user.id, id_coleccion }),
+      body: JSON.stringify({ type: 'sobres', userId: user.id, id_coleccion, cantidad }),
     });
     const data = await res.json();
     if (data.url) {
@@ -377,7 +388,11 @@ export default function Sobres() {
                     <p style={{ margin: '8px 0', color: '#555' }}>Próximo sobre gratuito en: <b>{tiempoRestante}</b></p>
                   )}
                   <button
-                    onClick={() => handleCheckoutSobres(col.id)}
+                    onClick={() => {
+                      setColeccionCompra(col.id);
+                      setPackSeleccionado(1);
+                      setShowCompra(true);
+                    }}
                     style={{
                       background: '#10b981',
                       color: '#fff',
@@ -392,12 +407,67 @@ export default function Sobres() {
                       transition: 'background 0.2s',
                     }}
                   >
-                    Comprar sobre
+                    Comprar sobres
                   </button>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+      {/* Popup para packs de compra */}
+      {showCompra && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0,0,0,0.45)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1100
+        }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: '2em 2em 1.5em 2em', boxShadow: '0 4px 24px #2563eb33', minWidth: 320, maxWidth: 420, textAlign: 'center' }}>
+            <h3 style={{ color: '#10b981', marginBottom: 18 }}>Comprar sobres</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 18 }}>
+              {packs.map(pack => (
+                <label key={pack.cantidad} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', border: packSeleccionado === pack.cantidad ? '2px solid #10b981' : '2px solid #e5e7eb', borderRadius: 8, padding: '0.7em 1em', background: packSeleccionado === pack.cantidad ? '#f0fdf4' : '#f9fafb', fontWeight: packSeleccionado === pack.cantidad ? 'bold' : 'normal' }}>
+                  <input
+                    type="radio"
+                    name="pack"
+                    value={pack.cantidad}
+                    checked={packSeleccionado === pack.cantidad}
+                    onChange={() => setPackSeleccionado(pack.cantidad)}
+                    style={{ accentColor: '#10b981', marginRight: 8 }}
+                  />
+                  {pack.cantidad} sobre{pack.cantidad > 1 ? 's' : ''} &nbsp;
+                  <span style={{ color: '#10b981', fontWeight: 600, fontSize: '1.1em' }}>{pack.precio.toFixed(2)} €</span>
+                  {pack.cantidad > 1 && (
+                    <span style={{ color: '#f59e42', fontWeight: 500, fontSize: '0.95em', marginLeft: 8 }}>
+                      {pack.cantidad === 3 && '10% dto.'}
+                      {pack.cantidad === 5 && '20% dto.'}
+                      {pack.cantidad === 10 && '30% dto.'}
+                    </span>
+                  )}
+                </label>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+              <button
+                onClick={() => setShowCompra(false)}
+                style={{ background: '#e5e7eb', color: '#333', border: 'none', borderRadius: 8, padding: '0.6em 1.5em', fontWeight: 'bold', fontSize: '1em', cursor: 'pointer' }}
+              >Cancelar</button>
+              <button
+                onClick={() => {
+                  setShowCompra(false);
+                  handleCheckoutSobres(coleccionCompra, packSeleccionado);
+                }}
+                style={{ background: '#10b981', color: '#fff', border: 'none', borderRadius: 8, padding: '0.6em 1.5em', fontWeight: 'bold', fontSize: '1em', cursor: 'pointer' }}
+              >Comprar</button>
+            </div>
+          </div>
         </div>
       )}
       {/* Popup para mostrar cromos obtenidos */}
