@@ -59,11 +59,18 @@ export default async function handler(req, res) {
       if (subscription) {
         // Si hay suscripción, usar current_period_end
         premiumUntil = new Date(subscription.current_period_end * 1000).toISOString();
+        console.log('Usando subscription.current_period_end:', subscription.current_period_end, '->', premiumUntil);
+      } else if (session.subscription) {
+        // Si no tenemos subscription pero hay session.subscription, obtenerlo
+        const retrievedSubscription = await stripe.subscriptions.retrieve(session.subscription);
+        premiumUntil = new Date(retrievedSubscription.current_period_end * 1000).toISOString();
+        console.log('Obteniendo subscription desde session.subscription:', retrievedSubscription.current_period_end, '->', premiumUntil);
       } else {
         // Para pagos únicos, usar 30 días desde ahora
         const thirtyDaysFromNow = new Date();
         thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
         premiumUntil = thirtyDaysFromNow.toISOString();
+        console.log('Usando 30 días para pago único:', premiumUntil);
       }
       
       const { error } = await supabase
