@@ -9,6 +9,7 @@ import Repetidos from "./Repetidos";
 import Perfil from "./Perfil";
 import Amigos from "./Amigos";
 import Sobres from "./Sobres";
+import Mercado from "./Mercado";
 import { supabase } from "./supabaseClient";
 import "./App.css";
 
@@ -63,6 +64,7 @@ function Navbar() {
             <Link className={location.pathname === "/sobres" ? "active" : ""} to="/sobres" onClick={handleNavClick}>Sobres</Link>
             <Link className={location.pathname === "/amigos" ? "active" : ""} to="/amigos" onClick={handleNavClick}>Amigos</Link>
             <Link className={location.pathname === "/perfil" ? "active" : ""} to="/perfil" onClick={handleNavClick}>Mi perfil</Link>
+            <Link className={location.pathname === "/mercado" ? "active" : ""} to="/mercado" onClick={handleNavClick}>Mercado</Link>
             <button onClick={handleLogout} style={{
               background: "#fff",
               color: "#2563eb",
@@ -125,6 +127,7 @@ function App() {
           <Route path="/sobres" element={<RutaProtegida><Sobres /></RutaProtegida>} />
           <Route path="/amigos" element={<RutaProtegida><Amigos /></RutaProtegida>} />
           <Route path="/perfil" element={<RutaProtegida><Perfil /></RutaProtegida>} />
+          <Route path="/mercado" element={<RutaProtegida><Mercado /></RutaProtegida>} />
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Registro />} />
         </Routes>
