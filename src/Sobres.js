@@ -5,6 +5,9 @@ export default function Sobres() {
   const [user, setUser] = useState(null);
   const [colecciones, setColecciones] = useState([]); // [{id, nombre, ...}]
   const [estadoColecciones, setEstadoColecciones] = useState({}); // {id_coleccion: {ultimaApertura, puedeReclamar, abriendo, cromosObtenidos, mensaje}}
+  const [showModal, setShowModal] = useState(false);
+  const [cromosModal, setCromosModal] = useState([]);
+  const [mensajeModal, setMensajeModal] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -107,6 +110,7 @@ export default function Sobres() {
         id_coleccion,
         fecha_apertura: new Date().toISOString(),
         gratuito: true,
+        abierto: true,
       })
       .select()
       .single();
@@ -117,12 +121,13 @@ export default function Sobres() {
       }));
       return;
     }
-    // Insertar cromos obtenidos en sobres_cromos y usuarios_cromos
+    // Insertar cromos obtenidos en sobres_cromos
     for (let id_cromo of seleccionados) {
       await supabase.from("sobres_cromos").insert({
         id_sobre: sobre.id,
         id_cromo,
       });
+      // Añadir cromo al usuario (usuarios_cromos): si ya lo tiene y no pegado, suma cantidad; si no, crea registro
       const { data: userCromo } = await supabase
         .from("usuarios_cromos")
         .select("id, cantidad")
@@ -160,6 +165,9 @@ export default function Sobres() {
         ultimaApertura: new Date()
       }
     }));
+    setCromosModal(cromosInfo);
+    setMensajeModal("¡Tus cromos del sobre gratuito!");
+    setShowModal(true);
   };
 
   // Abrir sobre comprado para una colección
@@ -229,10 +237,12 @@ export default function Sobres() {
         cromosObtenidos: seleccionados,
         mensaje: "¡Has abierto un sobre comprado!",
         abriendo: false,
-        // Elimina el sobre pendiente de la lista
         sobresCompradosPendientes: prev[id_coleccion].sobresCompradosPendientes.filter(s => s.id !== id_sobre)
       }
     }));
+    setCromosModal(seleccionados);
+    setMensajeModal("¡Tus cromos del sobre comprado!");
+    setShowModal(true);
   };
 
   // Comprar sobre para una colección
@@ -304,6 +314,9 @@ export default function Sobres() {
                 <div style={{ padding: '0 18px 18px 18px', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
                   {estado.sobresCompradosPendientes && estado.sobresCompradosPendientes.length > 0 && (
                     <div style={{ marginBottom: 10 }}>
+                      <div style={{ color: '#f59e42', fontWeight: 'bold', marginBottom: 6 }}>
+                        Abrir {estado.sobresCompradosPendientes.length} sobre{estado.sobresCompradosPendientes.length > 1 ? 's' : ''} comprado{estado.sobresCompradosPendientes.length > 1 ? 's' : ''}
+                      </div>
                       {estado.sobresCompradosPendientes.map(sobre => (
                         <button
                           key={sobre.id}
@@ -395,6 +408,34 @@ export default function Sobres() {
               </div>
             );
           })}
+        </div>
+      )}
+      {/* Popup para mostrar cromos obtenidos */}
+      {showModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0,0,0,0.45)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: '2em 2em 1.5em 2em', boxShadow: '0 4px 24px #2563eb33', minWidth: 320, maxWidth: 420, textAlign: 'center' }}>
+            <h3 style={{ color: '#2563eb' }}>{mensajeModal}</h3>
+            <div style={{ display: 'flex', gap: '1.2em', flexWrap: 'wrap', justifyContent: 'center', margin: '1.5em 0' }}>
+              {cromosModal.map(cromo => (
+                <div key={cromo.id} style={{ background: '#f1f5fd', border: '2px solid #2563eb', borderRadius: 10, padding: 10, textAlign: 'center', width: 90, position: 'relative' }}>
+                  <img src={cromo.imagen_url || 'https://via.placeholder.com/80x80?text=Cromo'} alt={cromo.nombre} style={{ width: 70, height: 70, borderRadius: 8, objectFit: 'cover', marginBottom: 8 }} />
+                  <div style={{ fontWeight: 'bold', color: '#2563eb', fontSize: '0.95em' }}>{cromo.nombre}</div>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setShowModal(false)} style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '0.7em 2em', fontWeight: 'bold', fontSize: '1.1em', cursor: 'pointer', marginTop: 12 }}>Cerrar</button>
+          </div>
         </div>
       )}
     </div>
