@@ -43,24 +43,35 @@ function PopupIntercambio({ abierto, onClose, usuario1, usuario2, cromos1, cromo
     <div style={{
       position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.25)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center'
     }}>
-      <div style={{ background: '#fff', borderRadius: 18, padding: 36, minWidth: 340, boxShadow: '0 4px 32px #2563eb33', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-          {/* Usuario 1 */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
+      <div style={{ background: '#fff', borderRadius: 18, padding: 36, minWidth: 340, boxShadow: '0 4px 32px #2563eb33', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24, maxWidth: 600 }}>
+        <h2 style={{ color: '#10b981', fontWeight: 700, fontSize: '2em', marginBottom: 8 }}>¡Enhorabuena! Cambio realizado</h2>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 32, width: '100%', justifyContent: 'center' }}>
+          {/* Das */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120, flex: 1 }}>
+            <span style={{ fontWeight: 600, color: '#2563eb', fontSize: '1.1em', marginBottom: 6 }}>Das</span>
             <img src={usuario1.avatar_url || 'https://placehold.co/48x48?text=U'} alt={usuario1.nombre} style={{ width: 64, height: 64, borderRadius: '50%', border: '2px solid #2563eb', objectFit: 'cover', marginBottom: 6 }} />
             <span style={{ fontWeight: 600, color: '#2563eb', fontSize: '1.1em', display: 'flex', alignItems: 'center', gap: 4 }}>{usuario1.nombre}{usuario1.premium && <span title="Usuario premium" style={{ color: '#facc15', fontSize: '1.2em', marginLeft: 2, verticalAlign: 'middle', filter: 'drop-shadow(0 1px 2px #facc1555)' }}>★</span>}</span>
-            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-              {cromos1.map(c => <img key={c.id} src={c.imagen_url || 'https://placehold.co/40x40?text=C'} alt={c.id_cromo} style={{ width: 40, height: 40, borderRadius: 8, border: '2px solid #2563eb' }} />)}
+            <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {cromos1.map(c => c.imagen_url ? (
+                <img key={c.id} src={c.imagen_url} alt={c.id_cromo} style={{ width: 48, height: 48, borderRadius: 8, border: '2px solid #2563eb', background: '#fff' }} />
+              ) : (
+                <div key={c.id} style={{ width: 48, height: 48, borderRadius: 8, border: '2px solid #2563eb', background: '#f4f4f4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#2563eb', textAlign: 'center', padding: 2 }}>{c.nombre || 'Sin imagen'}</div>
+              ))}
             </div>
           </div>
           {/* Flechas */}
-          <div style={{ fontSize: 36, color: '#2563eb', fontWeight: 700, margin: '0 12px' }}>⇄</div>
-          {/* Usuario 2 */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120 }}>
+          <div style={{ fontSize: 36, color: '#2563eb', fontWeight: 700, margin: '0 12px', alignSelf: 'center' }}>⇄</div>
+          {/* Recibes */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 120, flex: 1 }}>
+            <span style={{ fontWeight: 600, color: '#f59e42', fontSize: '1.1em', marginBottom: 6 }}>Recibes</span>
             <img src={usuario2.avatar_url || 'https://placehold.co/48x48?text=U'} alt={usuario2.nombre} style={{ width: 64, height: 64, borderRadius: '50%', border: '2px solid #f59e42', objectFit: 'cover', marginBottom: 6 }} />
             <span style={{ fontWeight: 600, color: '#f59e42', fontSize: '1.1em', display: 'flex', alignItems: 'center', gap: 4 }}>{usuario2.nombre}{usuario2.premium && <span title="Usuario premium" style={{ color: '#facc15', fontSize: '1.2em', marginLeft: 2, verticalAlign: 'middle', filter: 'drop-shadow(0 1px 2px #facc1555)' }}>★</span>}</span>
-            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-              {cromos2.map(c => <img key={c.id} src={c.imagen_url || 'https://placehold.co/40x40?text=C'} alt={c.id_cromo} style={{ width: 40, height: 40, borderRadius: 8, border: '2px solid #f59e42' }} />)}
+            <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {cromos2.map(c => c.imagen_url ? (
+                <img key={c.id} src={c.imagen_url} alt={c.id_cromo} style={{ width: 48, height: 48, borderRadius: 8, border: '2px solid #f59e42', background: '#fff' }} />
+              ) : (
+                <div key={c.id} style={{ width: 48, height: 48, borderRadius: 8, border: '2px solid #f59e42', background: '#f4f4f4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#f59e42', textAlign: 'center', padding: 2 }}>{c.nombre || 'Sin imagen'}</div>
+              ))}
             </div>
           </div>
         </div>
@@ -134,13 +145,20 @@ export default function Mercado() {
           const pegados = new Set(misCromos?.filter(c => c.pegado).map(c => c.id_cromo));
           // Todos mis cromos (pegados o no)
           const todosMisCromos = new Set(misCromos?.map(c => c.id_cromo));
-          // Repetidos: registros con pegado=false y el usuario ya tiene ese cromo pegado
-          const misRepetidos = misCromos?.filter(c => !c.pegado && pegados.has(c.id_cromo));
-          const misRepetidosInfo = misRepetidos?.map(rep => ({
-            id: rep.id,
-            id_cromo: rep.id_cromo,
-            imagen_url: cromosCol.find(c => c.id === rep.id_cromo)?.imagen_url || ''
-          })) || [];
+          // Mis repetidos: solo los que están en la colección seleccionada
+          const misRepetidos = misCromos?.filter(c => !c.pegado && pegados.has(c.id_cromo) && cromosCol.some(col => String(col.id) === String(c.id_cromo)));
+          const misRepetidosInfo = misRepetidos
+            ?.map(rep => {
+              const cromo = cromosCol.find(c => String(c.id) === String(rep.id_cromo));
+              if (!cromo) return null;
+              return {
+                id: rep.id,
+                id_cromo: rep.id_cromo,
+                imagen_url: cromo.imagen_url,
+                nombre: cromo.nombre
+              };
+            })
+            .filter(Boolean) || [];
 
           // 3. Para cada usuario, obtener sus cromos y calcular matching
           const matchingsArr = [];
@@ -152,13 +170,20 @@ export default function Mercado() {
               .eq("id_usuario", u.id);
             const susPegados = new Set(susCromos?.filter(c => c.pegado).map(c => c.id_cromo));
             const todosSusCromos = new Set(susCromos?.map(c => c.id_cromo));
-            // Sus repetidos reales
-            const susRepetidos = susCromos?.filter(c => !c.pegado && susPegados.has(c.id_cromo));
-            const susRepetidosInfo = susRepetidos?.map(rep => ({
-              id: rep.id,
-              id_cromo: rep.id_cromo,
-              imagen_url: cromosCol.find(c => c.id === rep.id_cromo)?.imagen_url || ''
-            })) || [];
+            // Sus repetidos: solo los que están en la colección seleccionada
+            const susRepetidos = susCromos?.filter(c => !c.pegado && susPegados.has(c.id_cromo) && cromosCol.some(col => String(col.id) === String(c.id_cromo)));
+            const susRepetidosInfo = susRepetidos
+              ?.map(rep => {
+                const cromo = cromosCol.find(c => String(c.id) === String(rep.id_cromo));
+                if (!cromo) return null;
+                return {
+                  id: rep.id,
+                  id_cromo: rep.id_cromo,
+                  imagen_url: cromo.imagen_url,
+                  nombre: cromo.nombre
+                };
+              })
+              .filter(Boolean) || [];
 
             // Yo puedo dar: mis repetidos que el otro NO tiene (ni pegados ni sin pegar)
             const yoPuedoDar = misRepetidosInfo.filter(rep => !todosSusCromos.has(rep.id_cromo));
