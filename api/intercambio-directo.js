@@ -68,6 +68,7 @@ export default async function handler(req, res) {
       id_usuario: id_usuario_envia,
       id_cromo: c.id_cromo,
       cantidad: 1,
+      id_cromo_unico: c.id // Nuevo campo para trazabilidad
     });
   }
   for (const c of cromos_recibe) {
@@ -76,6 +77,7 @@ export default async function handler(req, res) {
       id_usuario: id_usuario_recibe,
       id_cromo: c.id_cromo,
       cantidad: 1,
+      id_cromo_unico: c.id // Nuevo campo para trazabilidad
     });
   }
   const { error: errorCromos } = await supabase
