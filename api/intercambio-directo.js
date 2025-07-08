@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     const disponibles = [];
     for (const cromo of cromos) {
       const { data, error } = await supabase
-        .from('coleccion_cromos')
+        .from('usuarios_cromos') // CAMBIADO a usuarios_cromos
         .select('cantidad')
         .eq('id_usuario', id_usuario)
         .eq('id_cromo', cromo.id_cromo)
@@ -115,21 +115,21 @@ export default async function handler(req, res) {
     for (const c of cromos) {
       // signo: -1 para restar, +1 para sumar
       const { data, error } = await supabase
-        .from('coleccion_cromos')
+        .from('usuarios_cromos') // CAMBIADO a usuarios_cromos
         .select('cantidad')
         .eq('id_usuario', id_usuario)
         .eq('id_cromo', c.id_cromo)
         .single();
       if (data) {
         await supabase
-          .from('coleccion_cromos')
+          .from('usuarios_cromos') // CAMBIADO a usuarios_cromos
           .update({ cantidad: data.cantidad + signo * c.cantidad })
           .eq('id_usuario', id_usuario)
           .eq('id_cromo', c.id_cromo);
       } else if (signo > 0) {
         // Si suma y no existe, crear
         await supabase
-          .from('coleccion_cromos')
+          .from('usuarios_cromos') // CAMBIADO a usuarios_cromos
           .insert({ id_usuario, id_cromo: c.id_cromo, cantidad: c.cantidad });
       }
     }

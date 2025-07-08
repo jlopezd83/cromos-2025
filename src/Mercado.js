@@ -194,8 +194,29 @@ export default function Mercado() {
                   </div>
                 </div>
                 <button
-                  disabled={seleccionados.loading || seleccionados.envia.length === 0 || seleccionados.recibe.length === 0}
-                  style={{ marginTop: 18, padding: '10px 28px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: '1.1em', cursor: seleccionados.loading ? 'wait' : 'pointer', opacity: (seleccionados.envia.length === 0 || seleccionados.recibe.length === 0) ? 0.5 : 1 }}
+                  disabled={
+                    seleccionados.loading ||
+                    seleccionados.envia.length === 0 ||
+                    seleccionados.recibe.length === 0 ||
+                    seleccionados.envia.length !== seleccionados.recibe.length
+                  }
+                  style={{
+                    marginTop: 18,
+                    padding: '10px 28px',
+                    background: '#2563eb',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 8,
+                    fontWeight: 600,
+                    fontSize: '1.1em',
+                    cursor: seleccionados.loading ? 'wait' : 'pointer',
+                    opacity:
+                      (seleccionados.envia.length === 0 ||
+                        seleccionados.recibe.length === 0 ||
+                        seleccionados.envia.length !== seleccionados.recibe.length)
+                        ? 0.5
+                        : 1
+                  }}
                   onClick={async () => {
                     setSeleccionadosPorUsuario(s => ({ ...s, [usuario.id]: { ...seleccionados, loading: true, mensaje: '' } }));
                     try {
