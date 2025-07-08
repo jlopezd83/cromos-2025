@@ -80,7 +80,7 @@ export default async function handler(req, res) {
     });
   }
   const { error: errorCromos } = await supabase
-    .from('intercambio_cromos')
+    .from('intercambios_cromos') // Corregido el nombre de la tabla
     .insert(registros_cromos);
   if (errorCromos) {
     return res.status(500).json({ error: 'Error registrando cromos del intercambio' });
