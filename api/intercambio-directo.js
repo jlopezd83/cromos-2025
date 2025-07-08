@@ -88,17 +88,33 @@ export default async function handler(req, res) {
 
   // 3. Actualizar los cromos: cambiar el id_usuario de la fila repetida
   // El usuario que da, pasa su fila a id_usuario del que recibe
-  for (const { id } of ids_envia) {
-    await supabase
+  for (const { id, id_cromo } of ids_envia) {
+    // Solo actualizar si pegado=false
+    const { data: fila } = await supabase
       .from('usuarios_cromos')
-      .update({ id_usuario: id_usuario_recibe })
-      .eq('id', id);
+      .select('pegado')
+      .eq('id', id)
+      .single();
+    if (fila && fila.pegado === false) {
+      await supabase
+        .from('usuarios_cromos')
+        .update({ id_usuario: id_usuario_recibe })
+        .eq('id', id);
+    }
   }
-  for (const { id } of ids_recibe) {
-    await supabase
+  for (const { id, id_cromo } of ids_recibe) {
+    // Solo actualizar si pegado=false
+    const { data: fila } = await supabase
       .from('usuarios_cromos')
-      .update({ id_usuario: id_usuario_envia })
-      .eq('id', id);
+      .select('pegado')
+      .eq('id', id)
+      .single();
+    if (fila && fila.pegado === false) {
+      await supabase
+        .from('usuarios_cromos')
+        .update({ id_usuario: id_usuario_envia })
+        .eq('id', id);
+    }
   }
 
   return res.status(200).json({
