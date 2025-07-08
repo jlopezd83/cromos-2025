@@ -107,8 +107,6 @@ export default function Mercado() {
             imagen_url: cromosCol.find(c => c.id === rep.id_cromo)?.imagen_url || ''
           })) || [];
 
-          const faltantes = idsCromosCol.filter(id => !pegados.has(id));
-
           // 3. Para cada usuario, obtener sus cromos y calcular matching
           const matchingsArr = [];
           for (let u of usuarios) {
@@ -125,11 +123,15 @@ export default function Mercado() {
               id_cromo: rep.id_cromo,
               imagen_url: cromosCol.find(c => c.id === rep.id_cromo)?.imagen_url || ''
             })) || [];
+            // Todos los cromos que tiene el otro usuario (pegados o no)
+            const susTodos = new Set(susCromos?.map(c => c.id_cromo));
+            // Todos los cromos que tengo yo (pegados o no)
+            const misTodos = new Set(misCromos?.map(c => c.id_cromo));
 
-            // Yo puedo dar: mis repetidos que le faltan a él (por id único)
-            const yoPuedoDar = misRepetidosInfo.filter(rep => !susPegados.has(rep.id_cromo));
-            // Él puede dar: sus repetidos que me faltan a mí (por id único)
-            const elPuedeDar = susRepetidosInfo.filter(rep => faltantes.includes(rep.id_cromo));
+            // Yo puedo dar: mis repetidos que el otro NO tiene (ni pegado ni repetido)
+            const yoPuedoDar = misRepetidosInfo.filter(rep => !susTodos.has(rep.id_cromo));
+            // Él puede dar: sus repetidos que yo NO tengo (ni pegado ni repetido)
+            const elPuedeDar = susRepetidosInfo.filter(rep => !misTodos.has(rep.id_cromo));
 
             if (yoPuedoDar.length > 0 || elPuedeDar.length > 0) {
               matchingsArr.push({ usuario: u, yoPuedoDar, elPuedeDar });
