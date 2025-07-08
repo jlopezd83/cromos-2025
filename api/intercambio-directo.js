@@ -13,6 +13,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Datos incompletos' });
   }
 
+  console.log('Intercambio directo recibido:', {
+    id_usuario_envia,
+    id_usuario_recibe,
+    ids_envia,
+    ids_recibe
+  });
+
   // 1. Verificar que los ids recibidos existen y son pegado=false
   async function esRepetido(id) {
     const { data, error } = await supabase
@@ -88,18 +95,34 @@ export default async function handler(req, res) {
   }
 
   // 4. Actualizar los cromos: cambiar el id_usuario de la fila repetida
+  const updated_envia = [];
   for (const c of cromos_envia) {
-    await supabase
+    const { error, data } = await supabase
       .from('usuarios_cromos')
       .update({ id_usuario: id_usuario_recibe })
-      .eq('id', c.id);
+      .eq('id', c.id)
+      .select();
+    if (error) {
+      console.error('Error update envia:', c.id, error);
+    } else {
+      updated_envia.push(c.id);
+    }
   }
+  const updated_recibe = [];
   for (const c of cromos_recibe) {
-    await supabase
+    const { error, data } = await supabase
       .from('usuarios_cromos')
       .update({ id_usuario: id_usuario_envia })
-      .eq('id', c.id);
+      .eq('id', c.id)
+      .select();
+    if (error) {
+      console.error('Error update recibe:', c.id, error);
+    } else {
+      updated_recibe.push(c.id);
+    }
   }
+  console.log('Actualizados envia:', updated_envia);
+  console.log('Actualizados recibe:', updated_recibe);
 
   return res.status(200).json({
     ok: true,
