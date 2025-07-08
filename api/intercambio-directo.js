@@ -57,7 +57,8 @@ export default async function handler(req, res) {
     .single();
 
   if (errorIntercambio || !intercambio) {
-    return res.status(500).json({ error: 'Error creando el intercambio' });
+    console.error('Error detalle:', errorIntercambio);
+    return res.status(500).json({ error: 'Error creando el intercambio', detalle: errorIntercambio?.message || JSON.stringify(errorIntercambio) });
   }
 
   // Insertar cromos intercambiados en registro
