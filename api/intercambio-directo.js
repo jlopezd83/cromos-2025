@@ -50,7 +50,7 @@ export default async function handler(req, res) {
     .insert({
       id_usuario_envia,
       id_usuario_recibe,
-      estado: 'completado',
+      estado: 'aceptado', // Cambiado de 'completado' a 'aceptado'
       fecha: new Date().toISOString(),
     })
     .select()
