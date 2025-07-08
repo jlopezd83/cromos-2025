@@ -90,6 +90,7 @@ export default function Mercado() {
   const [loading, setLoading] = useState(false);
   const [seleccionadosPorUsuario, setSeleccionadosPorUsuario] = useState({}); // {usuarioId: {envia: [], recibe: [], mensaje: '', loading: false}}
   const [popup, setPopup] = useState({ abierto: false, usuario1: null, usuario2: null, cromos1: [], cromos2: [] });
+  const [perfilUsuario, setPerfilUsuario] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -202,12 +203,35 @@ export default function Mercado() {
     }
   }, [user, coleccionSeleccionada]);
 
+  useEffect(() => {
+    if (user) {
+      // Obtener perfil del usuario logueado
+      supabase
+        .from("perfiles")
+        .select("nombre_usuario, avatar_url, premium")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            setPerfilUsuario({
+              id: user.id,
+              nombre: data.nombre_usuario || user.email || 'Tú',
+              avatar_url: data.avatar_url || '',
+              premium: data.premium || false
+            });
+          } else {
+            setPerfilUsuario({ id: user.id, nombre: user.email || 'Tú', avatar_url: '', premium: false });
+          }
+        });
+    }
+  }, [user]);
+
   return (
     <div className="main-content">
       <PopupIntercambio
         abierto={popup.abierto}
         onClose={() => { setPopup({ abierto: false, usuario1: null, usuario2: null, cromos1: [], cromos2: [] }); window.location.reload(); }}
-        usuario1={popup.usuario1}
+        usuario1={perfilUsuario}
         usuario2={popup.usuario2}
         cromos1={popup.cromos1}
         cromos2={popup.cromos2}
@@ -301,7 +325,7 @@ export default function Mercado() {
                       if (data.ok) {
                         setPopup({
                           abierto: true,
-                          usuario1: { ...user, ...usuariosColeccion.find(u => u.id === user.id) },
+                          usuario1: perfilUsuario,
                           usuario2: usuario,
                           cromos1: yoPuedoDar.filter(c => seleccionados.envia.map(s => s.id).includes(c.id)),
                           cromos2: elPuedeDar.filter(c => seleccionados.recibe.map(s => s.id).includes(c.id))
