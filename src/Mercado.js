@@ -2,14 +2,14 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 
 function CromoSelector({ cromos, seleccionados, setSeleccionados, maxTotal, color }) {
-  // cromos: array de {id, nombre, imagen_url}
-  // seleccionados: array de {id_cromo}
+  // cromos: array de {id, id_cromo, imagen_url}
+  // seleccionados: array de {id}
   // setSeleccionados: setter
   // maxTotal: máximo cromos seleccionables
   // color: para el borde
 
-  const handleToggle = (id_cromo) => {
-    const idx = seleccionados.findIndex(s => s.id_cromo === id_cromo);
+  const handleToggle = (id) => {
+    const idx = seleccionados.findIndex(s => s.id === id);
     if (idx !== -1) {
       // Si ya está, quitar
       const nuevos = [...seleccionados];
@@ -17,7 +17,7 @@ function CromoSelector({ cromos, seleccionados, setSeleccionados, maxTotal, colo
       setSeleccionados(nuevos);
     } else {
       if (seleccionados.length < maxTotal) {
-        setSeleccionados([...seleccionados, { id_cromo }]);
+        setSeleccionados([...seleccionados, { id }]);
       }
     }
   };
@@ -25,10 +25,10 @@ function CromoSelector({ cromos, seleccionados, setSeleccionados, maxTotal, colo
   return (
     <div style={{ display: 'flex', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
       {cromos.map(cromo => {
-        const sel = seleccionados.find(s => s.id_cromo === cromo.id);
+        const sel = seleccionados.find(s => s.id === cromo.id);
         return (
           <div key={cromo.id} style={{ background: '#fff', border: `2px solid ${sel ? color : '#2563eb'}`, borderRadius: 10, width: 100, height: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 0, boxSizing: 'border-box', cursor: 'pointer', position: 'relative' }} onClick={() => handleToggle(cromo.id)}>
-            <img src={cromo.imagen_url || 'https://placehold.co/80x80?text=C'} alt={cromo.nombre} style={{ width: 84, height: 84, borderRadius: 8, objectFit: 'cover', display: 'block' }} />
+            <img src={cromo.imagen_url || 'https://placehold.co/80x80?text=C'} alt={cromo.id_cromo} style={{ width: 84, height: 84, borderRadius: 8, objectFit: 'cover', display: 'block' }} />
             {sel && <span style={{ position: 'absolute', top: 4, right: 8, color: color, fontWeight: 700 }}>✔</span>}
           </div>
         );
@@ -70,7 +70,6 @@ export default function Mercado() {
   useEffect(() => {
     if (user && coleccionSeleccionada) {
       setLoading(true);
-      // 1. Obtener todos los usuarios de la colección (excepto yo)
       supabase
         .from("usuarios_colecciones")
         .select("id_usuario, perfiles(nombre_usuario, avatar_url, premium)")
@@ -83,13 +82,13 @@ export default function Mercado() {
             nombre: u.perfiles?.nombre_usuario || "Usuario",
             avatar_url: u.perfiles?.avatar_url || "",
             premium: u.perfiles?.premium || false
-          })).slice(0, 10); // Limitar a 10 usuarios
+          })).slice(0, 10);
           setUsuariosColeccion(usuarios);
 
-          // 2. Obtener mis cromos de la colección
+          // 2. Obtener mis cromos de la colección (con id único y pegado)
           const { data: misCromos } = await supabase
             .from("usuarios_cromos")
-            .select("id_cromo, pegado")
+            .select("id, id_cromo, pegado")
             .eq("id_usuario", user.id);
           const { data: cromosCol } = await supabase
             .from("cromos")
@@ -97,39 +96,40 @@ export default function Mercado() {
             .eq("id_coleccion", coleccionSeleccionada);
           const idsCromosCol = cromosCol ? cromosCol.map(c => c.id) : [];
 
-          // Mis cromos pegados y repetidos
+          // Mis pegados y repetidos reales (con id único)
           const pegados = new Set(misCromos?.filter(c => c.pegado).map(c => c.id_cromo));
-          const repetidos = new Set();
-          if (misCromos) {
-            pegados.forEach(idCromo => {
-              const noPegados = misCromos.filter(c => c.id_cromo === idCromo && !c.pegado).length;
-              if (noPegados > 0) repetidos.add(idCromo);
-            });
-          }
+          // Repetidos: registros con pegado=false y el usuario ya tiene ese cromo pegado
+          const misRepetidos = misCromos?.filter(c => !c.pegado && pegados.has(c.id_cromo));
+          // Mapear a {id, id_cromo, imagen_url}
+          const misRepetidosInfo = misRepetidos?.map(rep => ({
+            id: rep.id,
+            id_cromo: rep.id_cromo,
+            imagen_url: cromosCol.find(c => c.id === rep.id_cromo)?.imagen_url || ''
+          })) || [];
+
           const faltantes = idsCromosCol.filter(id => !pegados.has(id));
 
           // 3. Para cada usuario, obtener sus cromos y calcular matching
           const matchingsArr = [];
           for (let u of usuarios) {
-            // Sus cromos
+            // Sus cromos (con id único y pegado)
             const { data: susCromos } = await supabase
               .from("usuarios_cromos")
-              .select("id_cromo, pegado")
+              .select("id, id_cromo, pegado")
               .eq("id_usuario", u.id);
             const susPegados = new Set(susCromos?.filter(c => c.pegado).map(c => c.id_cromo));
-            const susRepetidos = new Set();
-            if (susCromos) {
-              susPegados.forEach(idCromo => {
-                const noPegados = susCromos.filter(c => c.id_cromo === idCromo && !c.pegado).length;
-                if (noPegados > 0) susRepetidos.add(idCromo);
-              });
-            }
-            const susFaltantes = idsCromosCol.filter(id => !susPegados.has(id));
+            // Sus repetidos reales
+            const susRepetidos = susCromos?.filter(c => !c.pegado && susPegados.has(c.id_cromo));
+            const susRepetidosInfo = susRepetidos?.map(rep => ({
+              id: rep.id,
+              id_cromo: rep.id_cromo,
+              imagen_url: cromosCol.find(c => c.id === rep.id_cromo)?.imagen_url || ''
+            })) || [];
 
-            // Yo puedo dar: mis repetidos que le faltan a él
-            const yoPuedoDar = cromosCol.filter(c => repetidos.has(c.id) && susFaltantes.includes(c.id));
-            // Él puede dar: sus repetidos que me faltan a mí
-            const elPuedeDar = cromosCol.filter(c => susRepetidos.has(c.id) && faltantes.includes(c.id));
+            // Yo puedo dar: mis repetidos que le faltan a él (por id único)
+            const yoPuedoDar = misRepetidosInfo.filter(rep => !susPegados.has(rep.id_cromo));
+            // Él puede dar: sus repetidos que me faltan a mí (por id único)
+            const elPuedeDar = susRepetidosInfo.filter(rep => faltantes.includes(rep.id_cromo));
 
             if (yoPuedoDar.length > 0 || elPuedeDar.length > 0) {
               matchingsArr.push({ usuario: u, yoPuedoDar, elPuedeDar });
@@ -226,8 +226,8 @@ export default function Mercado() {
                         body: JSON.stringify({
                           id_usuario_envia: user.id,
                           id_usuario_recibe: usuario.id,
-                          cromos_envia: seleccionados.envia.map(c => ({ id_cromo: c.id_cromo, cantidad: 1 })),
-                          cromos_recibe: seleccionados.recibe.map(c => ({ id_cromo: c.id_cromo, cantidad: 1 }))
+                          ids_envia: seleccionados.envia.map(c => c.id),
+                          ids_recibe: seleccionados.recibe.map(c => c.id)
                         })
                       });
                       const data = await res.json();

@@ -7,50 +7,49 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Método no permitido' });
   }
 
-  const { id_usuario_envia, id_usuario_recibe, cromos_envia, cromos_recibe } = req.body;
+  const { id_usuario_envia, id_usuario_recibe, ids_envia, ids_recibe } = req.body;
 
-  if (!id_usuario_envia || !id_usuario_recibe || !Array.isArray(cromos_envia) || !Array.isArray(cromos_recibe)) {
+  if (!id_usuario_envia || !id_usuario_recibe || !Array.isArray(ids_envia) || !Array.isArray(ids_recibe)) {
     return res.status(400).json({ error: 'Datos incompletos' });
   }
 
-  // 1. Verificar disponibilidad real de cromos para ambos usuarios (repetidos, pegado=false)
-  async function tieneRepetido(id_usuario, id_cromo) {
+  // 1. Verificar que los ids recibidos existen y son pegado=false
+  async function esRepetido(id) {
     const { data, error } = await supabase
       .from('usuarios_cromos')
-      .select('id')
-      .eq('id_usuario', id_usuario)
-      .eq('id_cromo', id_cromo)
-      .eq('pegado', false)
-      .limit(1)
-      .maybeSingle();
-    return data ? data.id : null;
+      .select('id, id_cromo, pegado')
+      .eq('id', id)
+      .single();
+    if (error || !data || data.pegado !== false) return null;
+    return data;
   }
 
-  // Verificar que ambos usuarios pueden dar todos los cromos seleccionados
-  let ids_envia = [];
-  let ids_recibe = [];
-  for (const c of cromos_envia) {
-    const idFila = await tieneRepetido(id_usuario_envia, c.id_cromo);
-    if (!idFila) {
+  // Verificar ids_envia
+  let cromos_envia = [];
+  for (const id of ids_envia) {
+    const fila = await esRepetido(id);
+    if (!fila) {
       return res.status(400).json({ error: 'No tienes repetidos suficientes para intercambiar' });
     }
-    ids_envia.push({ id: idFila, id_cromo: c.id_cromo });
+    cromos_envia.push(fila);
   }
-  for (const c of cromos_recibe) {
-    const idFila = await tieneRepetido(id_usuario_recibe, c.id_cromo);
-    if (!idFila) {
+  // Verificar ids_recibe
+  let cromos_recibe = [];
+  for (const id of ids_recibe) {
+    const fila = await esRepetido(id);
+    if (!fila) {
       return res.status(400).json({ error: 'El otro usuario no tiene repetidos suficientes para intercambiar' });
     }
-    ids_recibe.push({ id: idFila, id_cromo: c.id_cromo });
+    cromos_recibe.push(fila);
   }
 
-  // 2. Realizar el intercambio de forma atómica
+  // 2. Registrar el intercambio
   const { data: intercambio, error: errorIntercambio } = await supabase
     .from('intercambios')
     .insert({
       id_usuario_envia,
       id_usuario_recibe,
-      estado: 'aceptado', // Cambiado de 'completado' a 'aceptado'
+      estado: 'aceptado',
       fecha: new Date().toISOString(),
     })
     .select()
@@ -61,7 +60,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Error creando el intercambio', detalle: errorIntercambio?.message || JSON.stringify(errorIntercambio) });
   }
 
-  // Insertar cromos intercambiados en registro
+  // 3. Registrar cromos intercambiados
   const registros_cromos = [];
   for (const c of cromos_envia) {
     registros_cromos.push({
@@ -80,41 +79,24 @@ export default async function handler(req, res) {
     });
   }
   const { error: errorCromos } = await supabase
-    .from('intercambios_cromos') // Corregido el nombre de la tabla
+    .from('intercambios_cromos')
     .insert(registros_cromos);
   if (errorCromos) {
-    return res.status(500).json({ error: 'Error registrando cromos del intercambio' });
+    return res.status(500).json({ error: 'Error registrando cromos del intercambio', detalle: errorCromos?.message || JSON.stringify(errorCromos) });
   }
 
-  // 3. Actualizar los cromos: cambiar el id_usuario de la fila repetida
-  // El usuario que da, pasa su fila a id_usuario del que recibe
-  for (const { id, id_cromo } of ids_envia) {
-    // Solo actualizar si pegado=false
-    const { data: fila } = await supabase
+  // 4. Actualizar los cromos: cambiar el id_usuario de la fila repetida
+  for (const c of cromos_envia) {
+    await supabase
       .from('usuarios_cromos')
-      .select('pegado')
-      .eq('id', id)
-      .single();
-    if (fila && fila.pegado === false) {
-      await supabase
-        .from('usuarios_cromos')
-        .update({ id_usuario: id_usuario_recibe })
-        .eq('id', id);
-    }
+      .update({ id_usuario: id_usuario_recibe })
+      .eq('id', c.id);
   }
-  for (const { id, id_cromo } of ids_recibe) {
-    // Solo actualizar si pegado=false
-    const { data: fila } = await supabase
+  for (const c of cromos_recibe) {
+    await supabase
       .from('usuarios_cromos')
-      .select('pegado')
-      .eq('id', id)
-      .single();
-    if (fila && fila.pegado === false) {
-      await supabase
-        .from('usuarios_cromos')
-        .update({ id_usuario: id_usuario_envia })
-        .eq('id', id);
-    }
+      .update({ id_usuario: id_usuario_envia })
+      .eq('id', c.id);
   }
 
   return res.status(200).json({
