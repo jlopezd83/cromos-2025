@@ -13,61 +13,36 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Datos incompletos' });
   }
 
-  // 1. Verificar disponibilidad real de cromos para ambos usuarios
-  // Helper para obtener cantidades reales
-  async function getDisponibles(id_usuario, cromos) {
-    const disponibles = [];
-    for (const cromo of cromos) {
-      const { data, error } = await supabase
-        .from('usuarios_cromos') // CAMBIADO a usuarios_cromos
-        .select('cantidad')
-        .eq('id_usuario', id_usuario)
-        .eq('id_cromo', cromo.id_cromo)
-        .single();
-      if (error || !data) {
-        disponibles.push(0);
-      } else {
-        disponibles.push(Math.max(0, data.cantidad));
-      }
+  // 1. Verificar disponibilidad real de cromos para ambos usuarios (repetidos, pegado=false)
+  async function tieneRepetido(id_usuario, id_cromo) {
+    const { data, error } = await supabase
+      .from('usuarios_cromos')
+      .select('id')
+      .eq('id_usuario', id_usuario)
+      .eq('id_cromo', id_cromo)
+      .eq('pegado', false)
+      .limit(1)
+      .maybeSingle();
+    return data ? data.id : null;
+  }
+
+  // Verificar que ambos usuarios pueden dar todos los cromos seleccionados
+  let ids_envia = [];
+  let ids_recibe = [];
+  for (const c of cromos_envia) {
+    const idFila = await tieneRepetido(id_usuario_envia, c.id_cromo);
+    if (!idFila) {
+      return res.status(400).json({ error: 'No tienes repetidos suficientes para intercambiar' });
     }
-    return disponibles;
+    ids_envia.push({ id: idFila, id_cromo: c.id_cromo });
   }
-
-  // Obtener cantidades disponibles
-  const disponibles_envia = await getDisponibles(id_usuario_envia, cromos_envia);
-  const disponibles_recibe = await getDisponibles(id_usuario_recibe, cromos_recibe);
-
-  // Calcular máximo posible a intercambiar por cada cromo
-  const max_envia = cromos_envia.map((c, i) => Math.min(c.cantidad, disponibles_envia[i]));
-  const max_recibe = cromos_recibe.map((c, i) => Math.min(c.cantidad, disponibles_recibe[i]));
-
-  // Sumar totales
-  const total_envia = max_envia.reduce((a, b) => a + b, 0);
-  const total_recibe = max_recibe.reduce((a, b) => a + b, 0);
-
-  // El máximo cromos a intercambiar es el mínimo entre ambos lados y 5
-  const maximo_intercambio = Math.min(total_envia, total_recibe, 5);
-
-  if (maximo_intercambio < 1) {
-    return res.status(400).json({ error: 'No hay cromos suficientes para intercambiar' });
-  }
-
-  // Ajustar arrays a la cantidad máxima posible (repartiendo cromos hasta llegar al máximo)
-  function ajustarCromos(cromos, maximos, maximo_intercambio) {
-    const resultado = [];
-    let restantes = maximo_intercambio;
-    for (let i = 0; i < cromos.length && restantes > 0; i++) {
-      const cantidad = Math.min(maximos[i], restantes);
-      if (cantidad > 0) {
-        resultado.push({ id_cromo: cromos[i].id_cromo, cantidad });
-        restantes -= cantidad;
-      }
+  for (const c of cromos_recibe) {
+    const idFila = await tieneRepetido(id_usuario_recibe, c.id_cromo);
+    if (!idFila) {
+      return res.status(400).json({ error: 'El otro usuario no tiene repetidos suficientes para intercambiar' });
     }
-    return resultado;
+    ids_recibe.push({ id: idFila, id_cromo: c.id_cromo });
   }
-
-  const cromos_envia_final = ajustarCromos(cromos_envia, max_envia, maximo_intercambio);
-  const cromos_recibe_final = ajustarCromos(cromos_recibe, max_recibe, maximo_intercambio);
 
   // 2. Realizar el intercambio de forma atómica
   const { data: intercambio, error: errorIntercambio } = await supabase
@@ -85,22 +60,22 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Error creando el intercambio' });
   }
 
-  // Insertar cromos intercambiados
+  // Insertar cromos intercambiados en registro
   const registros_cromos = [];
-  for (const c of cromos_envia_final) {
+  for (const c of cromos_envia) {
     registros_cromos.push({
       id_intercambio: intercambio.id,
       id_usuario: id_usuario_envia,
       id_cromo: c.id_cromo,
-      cantidad: c.cantidad,
+      cantidad: 1,
     });
   }
-  for (const c of cromos_recibe_final) {
+  for (const c of cromos_recibe) {
     registros_cromos.push({
       id_intercambio: intercambio.id,
       id_usuario: id_usuario_recibe,
       id_cromo: c.id_cromo,
-      cantidad: c.cantidad,
+      cantidad: 1,
     });
   }
   const { error: errorCromos } = await supabase
@@ -110,43 +85,26 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Error registrando cromos del intercambio' });
   }
 
-  // Actualizar colecciones de ambos usuarios
-  async function actualizarColeccion(id_usuario, cromos, signo) {
-    for (const c of cromos) {
-      // signo: -1 para restar, +1 para sumar
-      const { data, error } = await supabase
-        .from('usuarios_cromos') // CAMBIADO a usuarios_cromos
-        .select('cantidad')
-        .eq('id_usuario', id_usuario)
-        .eq('id_cromo', c.id_cromo)
-        .single();
-      if (data) {
-        await supabase
-          .from('usuarios_cromos') // CAMBIADO a usuarios_cromos
-          .update({ cantidad: data.cantidad + signo * c.cantidad })
-          .eq('id_usuario', id_usuario)
-          .eq('id_cromo', c.id_cromo);
-      } else if (signo > 0) {
-        // Si suma y no existe, crear
-        await supabase
-          .from('usuarios_cromos') // CAMBIADO a usuarios_cromos
-          .insert({ id_usuario, id_cromo: c.id_cromo, cantidad: c.cantidad });
-      }
-    }
+  // 3. Actualizar los cromos: cambiar el id_usuario de la fila repetida
+  // El usuario que da, pasa su fila a id_usuario del que recibe
+  for (const { id } of ids_envia) {
+    await supabase
+      .from('usuarios_cromos')
+      .update({ id_usuario: id_usuario_recibe })
+      .eq('id', id);
   }
-
-  // Restar cromos al que envía, sumar al que recibe
-  await actualizarColeccion(id_usuario_envia, cromos_envia_final, -1);
-  await actualizarColeccion(id_usuario_recibe, cromos_envia_final, +1);
-  // Restar cromos al que recibe, sumar al que envía
-  await actualizarColeccion(id_usuario_recibe, cromos_recibe_final, -1);
-  await actualizarColeccion(id_usuario_envia, cromos_recibe_final, +1);
+  for (const { id } of ids_recibe) {
+    await supabase
+      .from('usuarios_cromos')
+      .update({ id_usuario: id_usuario_envia })
+      .eq('id', id);
+  }
 
   return res.status(200).json({
     ok: true,
     intercambio_id: intercambio.id,
-    cromos_envia: cromos_envia_final,
-    cromos_recibe: cromos_recibe_final,
-    maximo_intercambio,
+    cromos_envia,
+    cromos_recibe,
+    maximo_intercambio: cromos_envia.length,
   });
 } 
